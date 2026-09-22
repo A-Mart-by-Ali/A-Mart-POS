@@ -25,8 +25,14 @@ import {
   subscribeInventoryChanges
 } from '../services/inventoryService';
 import { Category, Supplier, Product, AdjustmentType } from '../types/database';
+import { isAdmin as checkIsAdmin, getCurrentUser } from '../services/authService';
 
-export const ProductCatalogView: React.FC = () => {
+interface ProductCatalogViewProps {
+  isAdmin?: boolean;
+}
+
+export const ProductCatalogView: React.FC<ProductCatalogViewProps> = ({ isAdmin: propIsAdmin }) => {
+  const isUserAdmin = propIsAdmin !== undefined ? propIsAdmin : checkIsAdmin(getCurrentUser());
   const [products, setProducts] = useState<ProductWithStock[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -159,20 +165,24 @@ export const ProductCatalogView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            A-Mart Product Catalog & Stock
+            {isUserAdmin ? 'A-Mart Product Catalog & Stock' : 'A-Mart Product List'}
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Master SKU directory with live physical inventory, wholesale costs, and retail margins.
+            {isUserAdmin
+              ? 'Master SKU directory with live physical inventory, wholesale costs, and retail margins.'
+              : 'Store inventory list with live pricing, stock availability, and barcode lookup.'}
           </p>
         </div>
 
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-mart-900 text-white hover:bg-mart-800 text-sm font-semibold shadow-sm transition-all"
-        >
-          <Plus className="w-4 h-4 text-mart-200" />
-          <span>Add New Product</span>
-        </button>
+        {isUserAdmin && (
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-mart-900 text-white hover:bg-mart-800 text-sm font-semibold shadow-sm transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-mart-200" />
+            <span>Add New Product</span>
+          </button>
+        )}
       </div>
 
       {/* Filter and Search Bar */}
@@ -236,9 +246,9 @@ export const ProductCatalogView: React.FC = () => {
                 <th className="py-3 px-4">Item & SKU</th>
                 <th className="py-3 px-3">Barcode</th>
                 <th className="py-3 px-3">Category</th>
-                <th className="py-3 px-3 text-right">Cost Price</th>
+                {isUserAdmin && <th className="py-3 px-3 text-right">Cost Price</th>}
                 <th className="py-3 px-3 text-right">Selling Price</th>
-                <th className="py-3 px-3 text-right">Margin %</th>
+                {isUserAdmin && <th className="py-3 px-3 text-right">Margin %</th>}
                 <th className="py-3 px-4 text-center">Stock Balance</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
@@ -246,13 +256,13 @@ export const ProductCatalogView: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={isUserAdmin ? 8 : 6} className="py-12 text-center text-slate-400">
                     Loading catalog items...
                   </td>
                 </tr>
               ) : filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={isUserAdmin ? 8 : 6} className="py-12 text-center text-slate-400">
                     No products match your search or filter criteria.
                   </td>
                 </tr>
@@ -284,17 +294,21 @@ export const ProductCatalogView: React.FC = () => {
                         {p.category_name || '-'}
                       </td>
 
-                      <td className="py-3 px-3 text-right font-mono text-slate-600">
-                        Rs. {p.cost_price.toLocaleString()}
-                      </td>
+                      {isUserAdmin && (
+                        <td className="py-3 px-3 text-right font-mono text-slate-600">
+                          Rs. {p.cost_price.toLocaleString()}
+                        </td>
+                      )}
 
                       <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
                         Rs. {p.selling_price.toLocaleString()}
                       </td>
 
-                      <td className="py-3 px-3 text-right font-mono font-semibold text-emerald-700">
-                        {margin}%
-                      </td>
+                      {isUserAdmin && (
+                        <td className="py-3 px-3 text-right font-mono font-semibold text-emerald-700">
+                          {margin}%
+                        </td>
+                      )}
 
                       <td className="py-3 px-4 text-center">
                         <div className="inline-flex flex-col items-center">
@@ -317,19 +331,21 @@ export const ProductCatalogView: React.FC = () => {
 
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end space-x-1.5">
-                          <button
-                            onClick={() => {
-                              setQuickAdjustProduct(p);
-                              setAdjustData({ type: 'manual', quantity_change: 0, reason: '' });
-                            }}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-mart-900 hover:bg-mart-50 border border-slate-200 transition-all"
-                            title="Quick Stock Adjustment"
-                          >
-                            <SlidersHorizontal className="w-3.5 h-3.5" />
-                          </button>
+                          {isUserAdmin && (
+                            <button
+                              onClick={() => {
+                                setQuickAdjustProduct(p);
+                                setAdjustData({ type: 'manual', quantity_change: 0, reason: '' });
+                              }}
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-mart-900 hover:bg-mart-50 border border-slate-200 transition-all cursor-pointer"
+                              title="Quick Stock Adjustment"
+                            >
+                              <SlidersHorizontal className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           <button
                             onClick={() => setPrintLabelProduct(p)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-mart-900 hover:bg-mart-50 border border-slate-200 transition-all"
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-mart-900 hover:bg-mart-50 border border-slate-200 transition-all cursor-pointer"
                             title="Print Shelf Tag"
                           >
                             <Printer className="w-3.5 h-3.5" />

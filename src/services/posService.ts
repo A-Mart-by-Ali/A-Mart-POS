@@ -30,10 +30,16 @@ export const subscribePosChanges = (listener: PosListener) => {
   };
 };
 
-export const getCurrentShift = async (): Promise<CashierShift> => {
+export const getCurrentShift = async (): Promise<CashierShift | null> => {
   if (isSupabaseConfigured && supabase) {
-    const { data } = await supabase.from('cashier_shifts').select('*').eq('status', 'open').single();
-    return data || currentShift;
+    const { data } = await supabase
+      .from('cashier_shifts')
+      .select('*')
+      .eq('status', 'open')
+      .order('opened_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return data || null;
   }
   return currentShift;
 };
@@ -105,10 +111,29 @@ export interface ProcessSalePayload {
 
 export const processSale = async (payload: ProcessSalePayload): Promise<{ sale: Sale; items: SaleItem[]; receipt: Receipt; change: number }> => {
   if (isSupabaseConfigured && supabase) {
-    const { data, error } = await supabase.rpc('process_sale', { p_payload: payload });
+    const { data: saleData, error } = await supabase.rpc('process_sale', { p_payload: payload });
     if (error) throw error;
+
+    const { data: items } = await supabase.from('sale_items').select('*').eq('sale_id', saleData.id);
+    const { data: receipt } = await supabase.from('receipts').select('*').eq('sale_id', saleData.id).maybeSingle();
+    const change = payload.payment_method === 'cash' ? Math.max(0, payload.amount_received - Number(saleData.total_amount)) : 0;
+
     notifyPos();
-    return data;
+    return {
+      sale: saleData,
+      items: items || [],
+      receipt: receipt || {
+        id: `rec-${Date.now()}`,
+        sale_id: saleData.id,
+        receipt_number: saleData.receipt_number,
+        business_name: 'A-Mart Superstore',
+        business_contact: '+92 300 1234567 | info@a-mart.pk',
+        footer_message: 'Thank you for shopping at A-Mart!',
+        printed_count: 1,
+        created_at: new Date().toISOString()
+      },
+      change
+    };
   }
 
   const mockProducts = getMockProductsRef();

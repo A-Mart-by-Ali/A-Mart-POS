@@ -128,6 +128,16 @@ export const addProduct = async (productData: Omit<Product, 'id'>): Promise<Prod
   if (isSupabaseConfigured && supabase) {
     const { data, error } = await supabase.from('products').insert([productData]).select().single();
     if (error) throw error;
+
+    const { data: loc } = await supabase.from('locations').select('id').eq('is_default', true).single();
+    if (loc && data?.id) {
+      await supabase.from('inventory').insert([{
+        product_id: data.id,
+        location_id: loc.id,
+        quantity: 0
+      }]);
+    }
+
     notifyListeners();
     return data;
   }
