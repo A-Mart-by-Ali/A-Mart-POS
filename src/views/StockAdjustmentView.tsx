@@ -103,22 +103,22 @@ export const StockAdjustmentView: React.FC = () => {
 
       {/* Confirmation Banner */}
       {recentAdjustment && (
-        <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 shadow-sm flex items-start justify-between">
+        <div className="p-5 rounded-2xl bg-orange-50 border border-orange-200 text-orange-950 shadow-sm flex items-start justify-between">
           <div className="flex items-start space-x-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+            <CheckCircle2 className="w-5 h-5 text-orange-600 mt-0.5" />
             <div>
               <div className="font-bold text-sm">Stock Adjustment Logged & Approved</div>
-              <div className="text-xs text-emerald-800 mt-0.5 font-mono">
+              <div className="text-xs text-orange-900 mt-0.5 font-mono">
                 Document Number: <strong>{recentAdjustment.adjustment_number}</strong>
               </div>
-              <div className="text-xs text-emerald-700 mt-0.5">
+              <div className="text-xs text-orange-800 mt-0.5">
                 Type: <strong>{recentAdjustment.type.toUpperCase()}</strong> | Ledger updated atomically.
               </div>
             </div>
           </div>
           <button
             onClick={() => setRecentAdjustment(null)}
-            className="text-xs font-semibold text-emerald-800 hover:text-emerald-950"
+            className="text-xs font-semibold text-orange-800 hover:text-orange-950 px-3 py-1 rounded-full hover:bg-orange-100 transition-colors cursor-pointer"
           >
             Dismiss
           </button>
@@ -175,7 +175,7 @@ export const StockAdjustmentView: React.FC = () => {
                 <select
                   value={selectedProductId}
                   onChange={(e) => setSelectedProductId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-mart-800/20 focus:border-mart-800"
+                  className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:ring-2 focus:ring-mart-800/20 focus:border-mart-800"
                 >
                   {products.map(p => (
                     <option key={p.id} value={p.id}>
@@ -194,7 +194,7 @@ export const StockAdjustmentView: React.FC = () => {
                   required
                   value={qtyChange}
                   onChange={(e) => setQtyChange(Number(e.target.value))}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-mono text-sm font-bold focus:ring-2 focus:ring-mart-800/20 focus:border-mart-800"
+                  className="w-full px-4 py-2.5 rounded-full border border-slate-200 font-mono text-sm font-bold focus:ring-2 focus:ring-mart-800/20 focus:border-mart-800"
                 />
               </div>
             </div>
@@ -202,7 +202,7 @@ export const StockAdjustmentView: React.FC = () => {
 
           {/* Live Preview Box */}
           {selectedProduct && (
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="space-y-1">
                 <span className="text-slate-500 font-medium">Stock Calculation Preview:</span>
                 <div className="text-sm font-semibold text-slate-800">
@@ -218,7 +218,7 @@ export const StockAdjustmentView: React.FC = () => {
                 <span className="text-lg text-slate-300 font-bold">&rarr;</span>
                 <div>
                   <span className="text-[10px] text-slate-400 uppercase block font-sans">Adjustment</span>
-                  <strong className={`text-sm ${qtyChange >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  <strong className={`text-sm ${qtyChange >= 0 ? 'text-orange-600' : 'text-rose-600'}`}>
                     {qtyChange >= 0 ? `+${qtyChange}` : qtyChange}
                   </strong>
                 </div>
@@ -244,7 +244,7 @@ export const StockAdjustmentView: React.FC = () => {
               placeholder="e.g. Expired on 2026-03-15 or Found 2 damaged packs during shelf re-stocking"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-mart-800/20 focus:border-mart-800"
+              className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:ring-2 focus:ring-mart-800/20 focus:border-mart-800"
             />
           </div>
 
@@ -253,7 +253,7 @@ export const StockAdjustmentView: React.FC = () => {
             <button
               type="submit"
               disabled={submitting || (resultingQty < 0 && !selectedProduct?.allow_negative_stock)}
-              className="px-6 py-3 rounded-xl bg-mart-900 text-white font-bold hover:bg-mart-800 text-sm shadow-md transition-all disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-3 rounded-full bg-mart-900 text-white font-bold hover:bg-mart-800 text-sm shadow-md transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4 text-mart-200" />
               <span>{submitting ? 'Applying...' : 'Apply Stock Adjustment'}</span>

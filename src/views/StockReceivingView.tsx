@@ -14,7 +14,8 @@ import {
   getSuppliers,
   getProductsWithStock,
   receiveStock,
-  ProductWithStock
+  ProductWithStock,
+  subscribeInventoryChanges
 } from '../services/inventoryService';
 import { Supplier, Purchase } from '../types/database';
 
@@ -41,19 +42,29 @@ export const StockReceivingView: React.FC = () => {
   const [completedPurchase, setCompletedPurchase] = useState<Purchase | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const load = async () => {
       try {
         const [sups, prods] = await Promise.all([getSuppliers(), getProductsWithStock()]);
-        setSuppliers(sups);
-        setProducts(prods);
-        if (sups.length > 0) setSelectedSupplierId(sups[0].id);
+        if (isMounted) {
+          setSuppliers(sups);
+          setProducts(prods);
+          if (sups.length > 0 && !selectedSupplierId) setSelectedSupplierId(sups[0].id);
+        }
       } catch (err) {
         console.error(err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     load();
+    const unsubscribe = subscribeInventoryChanges(() => {
+      load();
+    });
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   const handleAddItem = () => {
@@ -153,22 +164,22 @@ export const StockReceivingView: React.FC = () => {
 
       {/* Success Banner */}
       {completedPurchase && (
-        <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 shadow-sm flex items-start justify-between">
+        <div className="p-5 rounded-2xl bg-orange-50 border border-orange-200 text-orange-950 shadow-sm flex items-start justify-between">
           <div className="flex items-start space-x-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+            <CheckCircle2 className="w-5 h-5 text-orange-600 mt-0.5" />
             <div>
               <div className="font-bold text-sm">Stock Consignment Successfully Received!</div>
-              <div className="text-xs text-emerald-800 mt-1 font-mono">
+              <div className="text-xs text-orange-900 mt-1 font-mono">
                 PO Document Number: <strong>{completedPurchase.purchase_number}</strong>
               </div>
-              <div className="text-xs text-emerald-700 mt-0.5">
+              <div className="text-xs text-orange-800 mt-0.5">
                 Total Value: <strong>Rs. {completedPurchase.total_amount.toLocaleString()}</strong> | Status: <strong>{completedPurchase.status.toUpperCase()}</strong>
               </div>
             </div>
           </div>
           <button
             onClick={() => setCompletedPurchase(null)}
-            className="text-xs font-semibold text-emerald-800 hover:text-emerald-950"
+            className="text-xs font-semibold text-orange-800 hover:text-orange-950 px-3 py-1 rounded-full hover:bg-orange-100 transition-colors cursor-pointer"
           >
             Dismiss
           </button>
@@ -208,20 +219,20 @@ export const StockReceivingView: React.FC = () => {
                 placeholder="e.g. INV-98432 or PO-552"
                 value={referenceNumber}
                 onChange={(e) => setReferenceNumber(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-mart-800/20 focus:border-mart-800"
+                className="w-full px-4 py-2.5 rounded-full border border-slate-200 font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-mart-800/20 focus:border-mart-800"
               />
             </div>
 
             <div>
               <label className="font-semibold text-slate-700 block mb-1">Receiving Destination</label>
-              <div className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-medium">
+              <div className="px-4 py-2.5 rounded-full bg-slate-50 border border-slate-200 text-slate-700 font-medium">
                 A-Mart Main Store (Default Warehouse)
               </div>
             </div>
           </div>
 
           {selectedSupplier && (
-            <div className="p-3 rounded-xl bg-mart-50/60 border border-mart-100 flex items-center justify-between text-xs text-mart-900">
+            <div className="p-3 rounded-2xl bg-mart-50/60 border border-mart-100 flex items-center justify-between text-xs text-mart-900">
               <span>Payment Terms: <strong>{selectedSupplier.payment_terms || 'Standard'}</strong></span>
               <span>Contact: <strong>{selectedSupplier.contact_person} ({selectedSupplier.phone})</strong></span>
               <span>Outstanding Balance: <strong>Rs. {selectedSupplier.current_balance.toLocaleString()}</strong></span>
@@ -240,7 +251,7 @@ export const StockReceivingView: React.FC = () => {
             <button
               type="button"
               onClick={handleAddItem}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-mart-900 text-white hover:bg-mart-800 text-xs font-semibold shadow-sm transition-all"
+              className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-mart-900 text-white hover:bg-mart-800 text-xs font-semibold shadow-sm transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Line Item</span>
@@ -248,13 +259,13 @@ export const StockReceivingView: React.FC = () => {
           </div>
 
           {items.length === 0 ? (
-            <div className="p-10 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">
+            <div className="p-10 text-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50">
               <PackageCheck className="w-8 h-8 text-slate-400 mx-auto mb-2" />
               <p className="text-sm font-medium text-slate-600">No items added to this consignment yet.</p>
               <button
                 type="button"
                 onClick={handleAddItem}
-                className="mt-3 px-3.5 py-1.5 rounded-lg bg-mart-900 text-white text-xs font-semibold hover:bg-mart-800"
+                className="mt-3 px-4 py-2 rounded-full bg-mart-900 text-white text-xs font-semibold hover:bg-mart-800 cursor-pointer shadow-sm"
               >
                 + Add First Product
               </button>
@@ -281,7 +292,7 @@ export const StockReceivingView: React.FC = () => {
                           <select
                             value={item.product_id}
                             onChange={(e) => handleItemChange(idx, 'product_id', e.target.value)}
-                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium focus:ring-1 focus:ring-mart-800"
+                            className="w-full px-3 py-1.5 rounded-full border border-slate-200 text-xs font-medium focus:ring-1 focus:ring-mart-800"
                           >
                             {products.map(p => (
                               <option key={p.id} value={p.id}>
@@ -297,7 +308,7 @@ export const StockReceivingView: React.FC = () => {
                             min="1"
                             value={item.quantity}
                             onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                            className="w-20 px-2 py-1.5 rounded-lg border border-slate-200 text-center font-mono font-bold"
+                            className="w-20 px-2 py-1.5 rounded-full border border-slate-200 text-center font-mono font-bold"
                           />
                         </td>
 
@@ -308,7 +319,7 @@ export const StockReceivingView: React.FC = () => {
                             step="0.01"
                             value={item.unit_cost}
                             onChange={(e) => handleItemChange(idx, 'unit_cost', e.target.value)}
-                            className="w-24 px-2 py-1.5 rounded-lg border border-slate-200 text-right font-mono"
+                            className="w-24 px-2.5 py-1.5 rounded-full border border-slate-200 text-right font-mono"
                           />
                         </td>
 
@@ -318,7 +329,7 @@ export const StockReceivingView: React.FC = () => {
                             min="0"
                             value={item.tax_amount}
                             onChange={(e) => handleItemChange(idx, 'tax_amount', e.target.value)}
-                            className="w-20 px-2 py-1.5 rounded-lg border border-slate-200 text-right font-mono"
+                            className="w-20 px-2 py-1.5 rounded-full border border-slate-200 text-right font-mono"
                           />
                         </td>
 
@@ -330,7 +341,7 @@ export const StockReceivingView: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleRemoveItem(idx)}
-                            className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                            className="p-1.5 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -373,7 +384,7 @@ export const StockReceivingView: React.FC = () => {
                   max={grandTotal}
                   value={paidAmount}
                   onChange={(e) => setPaidAmount(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-bold text-right text-emerald-800"
+                  className="w-full px-3.5 py-2 rounded-full border border-slate-200 font-mono font-bold text-right text-orange-900"
                 />
                 <div className="text-[10px] text-slate-500 mt-1 text-right">
                   Added to credit: <strong>Rs. {remainingPayable.toLocaleString()}</strong>
@@ -383,7 +394,7 @@ export const StockReceivingView: React.FC = () => {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-mart-900 text-white font-bold hover:bg-mart-800 shadow-md text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-6 py-3 rounded-full bg-mart-900 text-white font-bold hover:bg-mart-800 shadow-md text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <PackageCheck className="w-5 h-5 text-mart-200" />
                 <span>{submitting ? 'Receiving...' : 'Confirm Stock Receiving'}</span>

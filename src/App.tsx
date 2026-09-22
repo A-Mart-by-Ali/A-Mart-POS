@@ -10,12 +10,15 @@ import { POSView } from './views/POSView';
 import { SuppliersView } from './views/SuppliersView';
 import { ShiftsView } from './views/ShiftsView';
 import { SettingsView } from './views/SettingsView';
-import { LoginModal } from './components/auth/LoginModal';
+import { SalesAnalyticsView } from './views/SalesAnalyticsView';
+import { LoginPage } from './views/LoginPage';
+import { AnalyticsKeyModal } from './components/analytics/AnalyticsKeyModal';
 import { getProductsWithStock, subscribeInventoryChanges } from './services/inventoryService';
 import { getCurrentShift, subscribePosChanges } from './services/posService';
 import { getCurrentUser, subscribeAuth, AuthUser, isAdmin } from './services/authService';
+import { isAnalyticsUnlocked, lockAnalytics } from './services/analyticsService';
 import { CashierShift } from './types/database';
-import { ShieldAlert, ArrowLeft } from 'lucide-react';
+import { ShieldAlert, ArrowLeft, Lock, KeyRound } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(getCurrentUser());
@@ -25,16 +28,26 @@ export const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>(userIsAdmin ? 'dashboard' : 'pos');
   const [currentShift, setCurrentShift] = useState<CashierShift | null>(null);
   const [lowStockCount, setLowStockCount] = useState<number>(0);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
-  // Role access guard: If user is staff, only 'catalog' and 'pos' are permitted
+  // Security Key state for Sales & Analytics
+  const [analyticsUnlocked, setAnalyticsUnlocked] = useState<boolean>(isAnalyticsUnlocked());
+  const [isAnalyticsKeyModalOpen, setIsAnalyticsKeyModalOpen] = useState(false);
+
+  // Role access guard: If user is staff, only 'catalog', 'pos', and 'analytics' (key-protected) are permitted
   useEffect(() => {
-    if (!userIsAdmin && currentView !== 'catalog' && currentView !== 'pos') {
+    if (
+      currentUser &&
+      !userIsAdmin &&
+      currentView !== 'catalog' &&
+      currentView !== 'pos' &&
+      currentView !== 'analytics'
+    ) {
       setCurrentView('pos');
     }
-  }, [userIsAdmin, currentView]);
+  }, [currentUser, userIsAdmin, currentView]);
 
   const refreshGlobalState = async () => {
+    if (!currentUser) return;
     try {
       const [prods, shift] = await Promise.all([
         getProductsWithStock(),
@@ -49,13 +62,19 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    refreshGlobalState();
+    if (currentUser) {
+      refreshGlobalState();
+    }
     const unsubInv = subscribeInventoryChanges(refreshGlobalState);
     const unsubPos = subscribePosChanges(refreshGlobalState);
     const unsubAuth = subscribeAuth((user) => {
       setCurrentUser(user);
-      if (!isAdmin(user)) {
-        setCurrentView('pos');
+      if (user) {
+        if (!isAdmin(user)) {
+          setCurrentView('pos');
+        } else {
+          setCurrentView('dashboard');
+        }
       }
     });
     return () => {
@@ -63,12 +82,42 @@ export const App: React.FC = () => {
       unsubPos();
       unsubAuth();
     };
-  }, []);
+  }, [currentUser]);
+
+  // Handle navigation requests
+  const handleNavigate = (view: ViewType) => {
+    if (view === 'analytics') {
+      if (analyticsUnlocked) {
+        setCurrentView('analytics');
+      } else {
+        setIsAnalyticsKeyModalOpen(true);
+      }
+      return;
+    }
+
+    if (!userIsAdmin && view !== 'catalog' && view !== 'pos') {
+      setCurrentView('pos');
+    } else {
+      setCurrentView(view);
+    }
+  };
+
+  // If not logged in, render the dedicated A-Mart Login Page
+  if (!currentUser) {
+    return (
+      <LoginPage
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          setCurrentView(isAdmin(user) ? 'dashboard' : 'pos');
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans">
       
-      {/* Top Navigation Bar with Dark Green Theme */}
+      {/* Top Navigation Bar with Vibrant Orange Theme */}
       <Navbar
         currentShift={currentShift}
         lowStockCount={lowStockCount}
@@ -78,7 +127,6 @@ export const App: React.FC = () => {
             setCurrentView('settings');
           }
         }}
-        onOpenLoginModal={() => setIsLoginModalOpen(true)}
         currentUser={currentUser}
         activeView={currentView}
       />
@@ -86,16 +134,10 @@ export const App: React.FC = () => {
       {/* Main Body with Auto-Hiding Sidebar + View Content */}
       <div className="flex-1 flex max-w-[1600px] w-full mx-auto">
         
-        {/* Navigation Sidebar (Auto-shrinks to icons when cursor moves away; staff sees only POS & Product List) */}
+        {/* Navigation Sidebar */}
         <Sidebar
           currentView={currentView}
-          onViewChange={(view) => {
-            if (!userIsAdmin && view !== 'catalog' && view !== 'pos') {
-              setCurrentView('pos');
-            } else {
-              setCurrentView(view);
-            }
-          }}
+          onViewChange={handleNavigate}
           lowStockCount={lowStockCount}
           currentUser={currentUser}
         />
@@ -104,56 +146,87 @@ export const App: React.FC = () => {
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto min-w-0 transition-all">
           {/* Admin-only views */}
           {currentView === 'dashboard' && userIsAdmin && (
-            <InventoryDashboard onNavigate={(v) => setCurrentView(v)} />
+            <InventoryDashboard onNavigate={handleNavigate} />
           )}
           {currentView === 'receiving' && userIsAdmin && <StockReceivingView />}
           {currentView === 'adjustments' && userIsAdmin && <StockAdjustmentView />}
           {currentView === 'ledger' && userIsAdmin && <StockLedgerView />}
           {currentView === 'suppliers' && userIsAdmin && <SuppliersView />}
           {currentView === 'shifts' && userIsAdmin && <ShiftsView />}
-          {currentView === 'settings' && userIsAdmin && (
-            <SettingsView onOpenLoginModal={() => setIsLoginModalOpen(true)} />
-          )}
+          {currentView === 'settings' && userIsAdmin && <SettingsView />}
 
-          {/* Shared views (with role-specific restrictions inside) */}
+          {/* Shared views */}
           {currentView === 'catalog' && (
             <ProductCatalogView isAdmin={userIsAdmin} />
           )}
           {currentView === 'pos' && <POSView />}
 
-          {/* Unauthorized view attempt fallback for staff */}
-          {!userIsAdmin && currentView !== 'catalog' && currentView !== 'pos' && (
-            <div className="max-w-md mx-auto my-12 p-8 bg-white rounded-3xl border border-slate-200 shadow-sm text-center">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto mb-4">
-                <ShieldAlert className="w-6 h-6" />
+          {/* Sales & Analytics (Protected by Security Key) */}
+          {currentView === 'analytics' && (
+            analyticsUnlocked ? (
+              <SalesAnalyticsView
+                onLock={() => {
+                  lockAnalytics();
+                  setAnalyticsUnlocked(false);
+                  setCurrentView(userIsAdmin ? 'dashboard' : 'pos');
+                }}
+              />
+            ) : (
+              <div className="max-w-md mx-auto my-14 p-8 bg-white rounded-3xl border border-slate-200 shadow-sm text-center">
+                <div className="w-14 h-14 rounded-2xl bg-orange-100 text-orange-950 flex items-center justify-center mx-auto mb-4">
+                  <Lock className="w-7 h-7 text-mart-800" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">Protected Sales Analytics</h2>
+                <p className="text-xs text-slate-500 mt-2 mb-6 leading-relaxed">
+                  Sales revenue, profit margins, and transaction logs are encrypted. Enter your authorization key to proceed.
+                </p>
+                <button
+                  onClick={() => setIsAnalyticsKeyModalOpen(true)}
+                  className="inline-flex items-center space-x-2 px-6 py-3 rounded-full bg-mart-900 text-white font-bold text-xs hover:bg-mart-800 transition-all cursor-pointer shadow-md"
+                >
+                  <KeyRound className="w-4 h-4" />
+                  <span>Enter Security Key</span>
+                </button>
               </div>
-              <h2 className="text-lg font-bold text-slate-900">Restricted Staff Access</h2>
-              <p className="text-xs text-slate-500 mt-2 mb-6">
-                Your account is restricted to Point of Sale (POS) and Product List. Administrative management modules require an Admin login.
-              </p>
-              <button
-                onClick={() => setCurrentView('pos')}
-                className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-mart-900 text-white font-semibold text-xs hover:bg-mart-800 transition-all cursor-pointer"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Return to POS Terminal</span>
-              </button>
-            </div>
+            )
           )}
+
+          {/* Unauthorized view attempt fallback for staff */}
+          {!userIsAdmin &&
+            currentView !== 'catalog' &&
+            currentView !== 'pos' &&
+            currentView !== 'analytics' && (
+              <div className="max-w-md mx-auto my-12 p-8 bg-white rounded-3xl border border-slate-200 shadow-sm text-center">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto mb-4">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <h2 className="text-lg font-bold text-slate-900">Restricted Staff Access</h2>
+                <p className="text-xs text-slate-500 mt-2 mb-6">
+                  Your account is restricted to Point of Sale (POS) and Product List. Administrative management modules require an Admin login.
+                </p>
+                <button
+                  onClick={() => setCurrentView('pos')}
+                  className="inline-flex items-center space-x-2 px-6 py-2.5 rounded-full bg-mart-900 text-white font-semibold text-xs hover:bg-mart-800 transition-all cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Return to POS Terminal</span>
+                </button>
+              </div>
+            )}
         </main>
 
       </div>
 
-      {/* Login & Role Selection Modal */}
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        onSuccess={(user) => {
-          setCurrentUser(user);
-          setIsLoginModalOpen(false);
-          if (!isAdmin(user)) {
-            setCurrentView('pos');
-          }
+      {/* Security Key Challenge Modal for Sales & Analytics */}
+      <AnalyticsKeyModal
+        isOpen={isAnalyticsKeyModalOpen}
+        onSuccess={() => {
+          setAnalyticsUnlocked(true);
+          setIsAnalyticsKeyModalOpen(false);
+          setCurrentView('analytics');
+        }}
+        onCancel={() => {
+          setIsAnalyticsKeyModalOpen(false);
         }}
       />
 

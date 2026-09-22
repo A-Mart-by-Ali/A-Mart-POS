@@ -14,7 +14,9 @@ import {
   PinOff,
   ChevronRight,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  TrendingUp,
+  Lock
 } from 'lucide-react';
 import { AuthUser, isAdmin } from '../../services/authService';
 
@@ -27,7 +29,8 @@ export type ViewType =
   | 'pos'
   | 'suppliers'
   | 'shifts'
-  | 'settings';
+  | 'settings'
+  | 'analytics';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -49,20 +52,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isExpanded = isPinned || isHovered;
   const userIsAdmin = isAdmin(currentUser);
 
-  // Staff can ONLY see Product List and Point of Sale (POS)
+  // Navigation Items
   const allNavItems = [
-    { id: 'dashboard' as ViewType, label: 'Dashboard', icon: LayoutDashboard, badge: null, adminOnly: true },
-    { id: 'pos' as ViewType, label: 'Point of Sale (POS)', icon: ShoppingBag, badge: 'Terminal', adminOnly: false },
-    { id: 'catalog' as ViewType, label: userIsAdmin ? 'Inventory Catalog' : 'Product List', icon: Package, badge: lowStockCount > 0 ? lowStockCount : null, adminOnly: false },
-    { id: 'receiving' as ViewType, label: 'Stock Receiving', icon: Truck, badge: null, adminOnly: true },
-    { id: 'adjustments' as ViewType, label: 'Stock Adjustments', icon: SlidersHorizontal, badge: null, adminOnly: true },
-    { id: 'ledger' as ViewType, label: 'Movement Ledger', icon: History, badge: null, adminOnly: true },
-    { id: 'suppliers' as ViewType, label: 'Suppliers & Balances', icon: Building2, badge: null, adminOnly: true },
-    { id: 'shifts' as ViewType, label: 'Cashier Shifts', icon: CircleDollarSign, badge: null, adminOnly: true },
-    { id: 'settings' as ViewType, label: 'Settings & Roles', icon: Settings, badge: null, adminOnly: true },
+    { id: 'dashboard' as ViewType, label: 'Dashboard', icon: LayoutDashboard, badge: null, adminOnly: true, isKeyLocked: false },
+    { id: 'pos' as ViewType, label: 'Point of Sale (POS)', icon: ShoppingBag, badge: 'Terminal', adminOnly: false, isKeyLocked: false },
+    { id: 'analytics' as ViewType, label: 'Sales & Analytics', icon: TrendingUp, badge: null, adminOnly: false, isKeyLocked: true },
+    { id: 'catalog' as ViewType, label: userIsAdmin ? 'Inventory Catalog' : 'Product List', icon: Package, badge: lowStockCount > 0 ? lowStockCount : null, adminOnly: false, isKeyLocked: false },
+    { id: 'receiving' as ViewType, label: 'Stock Receiving', icon: Truck, badge: null, adminOnly: true, isKeyLocked: false },
+    { id: 'adjustments' as ViewType, label: 'Stock Adjustments', icon: SlidersHorizontal, badge: null, adminOnly: true, isKeyLocked: false },
+    { id: 'ledger' as ViewType, label: 'Movement Ledger', icon: History, badge: null, adminOnly: true, isKeyLocked: false },
+    { id: 'suppliers' as ViewType, label: 'Suppliers & Balances', icon: Building2, badge: null, adminOnly: true, isKeyLocked: false },
+    { id: 'shifts' as ViewType, label: 'Cashier Shifts', icon: CircleDollarSign, badge: null, adminOnly: true, isKeyLocked: false },
+    { id: 'settings' as ViewType, label: 'Settings & Roles', icon: Settings, badge: null, adminOnly: true, isKeyLocked: false },
   ];
 
-  // Filter items: staff sees strictly catalog and pos
+  // Filter items: staff sees strictly POS, Sales & Analytics (key protected), and Product List
   const navItems = userIsAdmin ? allNavItems : allNavItems.filter(item => !item.adminOnly);
 
   return (
@@ -84,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {userIsAdmin ? 'Admin Control' : 'Staff Terminal'}
                 </span>
                 {!userIsAdmin && (
-                  <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded">
+                  <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
                     Restricted
                   </span>
                 )}
@@ -93,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 type="button"
                 onClick={() => setIsPinned(!isPinned)}
                 title={isPinned ? 'Unpin (enable auto-hide)' : 'Pin sidebar open'}
-                className={`p-1 rounded-md text-slate-400 hover:text-mart-900 hover:bg-slate-100 transition-all ${
+                className={`p-1.5 rounded-full text-slate-400 hover:text-mart-900 hover:bg-slate-100 transition-all ${
                   isPinned ? 'text-mart-800 bg-mart-50' : ''
                 }`}
               >
@@ -108,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation Item Links */}
-        <nav className="space-y-1 pt-1">
+        <nav className="space-y-1.5 pt-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
@@ -117,8 +121,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 key={item.id}
                 onClick={() => onViewChange(item.id)}
                 title={!isExpanded ? item.label : undefined}
-                className={`w-full flex items-center rounded-xl text-sm transition-all cursor-pointer group relative ${
-                  isExpanded ? 'px-3 py-2.5 justify-between' : 'p-3 justify-center'
+                className={`w-full flex items-center rounded-full text-sm transition-all cursor-pointer group relative ${
+                  isExpanded ? 'px-4 py-2.5 justify-between' : 'p-3 justify-center'
                 } ${
                   isActive
                     ? 'bg-mart-900 text-white shadow-sm font-semibold'
@@ -139,27 +143,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {/* Badge when expanded */}
                 {isExpanded && item.badge !== null && (
                   <span
-                    className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                    className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
                       isActive
                         ? 'bg-mart-700 text-white'
+                        : item.isKeyLocked
+                        ? 'bg-amber-100 text-amber-900 border border-amber-200'
                         : item.badge === 'Terminal'
-                        ? 'bg-emerald-100 text-mart-800'
+                        ? 'bg-orange-100 text-orange-950 border border-orange-200'
                         : 'bg-amber-100 text-amber-800'
                     }`}
                   >
-                    {item.badge}
+                    {item.isKeyLocked && <Lock className="w-3 h-3 text-amber-700" />}
+                    <span>{item.badge}</span>
                   </span>
                 )}
 
                 {/* Notification indicator in collapsed mode */}
                 {!isExpanded && item.badge !== null && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white"></span>
+                  <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-2 ring-white ${
+                    item.isKeyLocked ? 'bg-amber-500' : 'bg-orange-500'
+                  }`}></span>
                 )}
 
                 {/* Hover Tooltip in collapsed mode */}
                 {!isExpanded && (
                   <div className="absolute left-full ml-2 px-2.5 py-1 bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-                    {item.label}
+                    <span>{item.label}</span>
                   </div>
                 )}
               </button>
@@ -194,7 +203,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </>
                   )}
                 </span>
-                <span className="font-bold text-emerald-800 bg-emerald-100/80 px-1.5 py-0.5 rounded text-[10px]">
+                <span className="font-bold text-orange-800 bg-orange-100/80 px-2 py-0.5 rounded-full text-[10px]">
                   Online
                 </span>
               </div>
@@ -202,7 +211,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         ) : (
           <div
-            className="w-full py-3 rounded-xl bg-mart-50 border border-mart-100 flex flex-col items-center justify-center text-mart-900 cursor-pointer"
+            className="w-full py-3 rounded-2xl bg-mart-50 border border-mart-100 flex flex-col items-center justify-center text-mart-900 cursor-pointer"
             title="A-Mart Main Store"
           >
             <Barcode className="w-5 h-5 text-mart-800" />

@@ -13,15 +13,13 @@ import {
 } from 'lucide-react';
 import { isSupabaseConfigured } from '../../services/supabase';
 import { CashierShift } from '../../types/database';
-import { AuthUser, logout, loginAsRole, ROLE_PROFILES } from '../../services/authService';
-import { AppRole } from '../../types/database';
+import { AuthUser, logout, isAdmin, KNOWN_ACCOUNTS } from '../../services/authService';
 
 interface NavbarProps {
   currentShift: CashierShift | null;
   lowStockCount: number;
   onNavigateToLowStock: () => void;
   onNavigateToSettings: () => void;
-  onOpenLoginModal: () => void;
   currentUser: AuthUser | null;
   activeView: string;
 }
@@ -31,11 +29,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   lowStockCount,
   onNavigateToLowStock,
   onNavigateToSettings,
-  onOpenLoginModal,
   currentUser
 }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const userIsAdmin = isAdmin(currentUser);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -53,26 +51,21 @@ export const Navbar: React.FC<NavbarProps> = ({
     await logout();
   };
 
-  const handleQuickRole = (role: AppRole) => {
-    loginAsRole(role);
-    setIsUserMenuOpen(false);
-  };
-
   return (
     <header className="bg-mart-900 border-b border-mart-800 text-white sticky top-0 z-30 shadow-md">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           
-          {/* Brand Logo & Name */}
+            {/* Brand Logo & Name */}
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-inner text-mart-900 font-extrabold text-xl tracking-tighter">
+            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-inner text-mart-900 font-extrabold text-xl tracking-tighter">
               A
             </div>
             <div>
               <div className="flex items-center space-x-2">
                 <span className="font-extrabold text-xl tracking-tight text-white">A-Mart</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider bg-mart-800 text-mart-200 px-2 py-0.5 rounded-full border border-mart-700">
-                  Inventory & POS
+                <span className="text-[11px] font-semibold uppercase tracking-wider bg-mart-800 text-mart-200 px-2.5 py-0.5 rounded-full border border-mart-700">
+                  {userIsAdmin ? 'Admin ERP' : 'POS Terminal'}
                 </span>
               </div>
               <p className="text-[11px] text-mart-200 font-medium hidden sm:block">
@@ -85,7 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center space-x-3 sm:space-x-4">
             
             {/* Database Engine Status Pill */}
-            <div className="hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-mart-950/60 border border-mart-800/80 text-xs">
+            <div className="hidden md:flex items-center space-x-1.5 px-3 py-1 rounded-full bg-mart-950/60 border border-mart-800/80 text-xs">
               <span className={`w-2 h-2 rounded-full ${isSupabaseConfigured ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
               <span className="text-mart-100 font-medium">
                 {isSupabaseConfigured ? 'Supabase Connected' : 'Local Retail Engine'}
@@ -94,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Active Shift Indicator */}
             {currentShift && (
-              <div className="flex items-center space-x-2 px-3 py-1 rounded-lg bg-mart-800/90 border border-mart-700/80 text-xs">
+              <div className="flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-mart-800/90 border border-mart-700/80 text-xs">
                 <Clock className="w-3.5 h-3.5 text-mart-400" />
                 <div className="text-left">
                   <span className="text-mart-200 block text-[10px] leading-3 uppercase font-bold">Shift</span>
@@ -105,11 +98,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             )}
 
-            {/* Low Stock Warning Pill Button */}
-            {lowStockCount > 0 && (
+            {/* Low Stock Warning Pill Button (Admin only) */}
+            {userIsAdmin && lowStockCount > 0 && (
               <button
                 onClick={onNavigateToLowStock}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-400/40 text-amber-200 hover:bg-amber-500/30 transition-all text-xs font-semibold cursor-pointer group"
+                className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-200 hover:bg-amber-500/30 transition-all text-xs font-semibold cursor-pointer group"
                 title="View low stock products"
               >
                 <AlertTriangle className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
@@ -121,17 +114,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center space-x-2 pl-2.5 pr-2 py-1 rounded-xl bg-mart-800/80 hover:bg-mart-800 border border-mart-700/70 transition-all cursor-pointer text-left"
+                className="flex items-center space-x-2 pl-2.5 pr-3 py-1.5 rounded-full bg-mart-800/80 hover:bg-mart-800 border border-mart-700/70 transition-all cursor-pointer text-left"
               >
                 <div className="w-8 h-8 rounded-full bg-mart-700 border border-mart-500 flex items-center justify-center text-xs font-bold text-white shadow-sm">
                   {currentUser ? currentUser.full_name.charAt(0) : '?'}
                 </div>
                 <div className="hidden lg:block">
                   <div className="text-xs font-semibold text-white leading-tight">
-                    {currentUser ? currentUser.full_name : 'Sign In'}
+                    {currentUser ? currentUser.full_name : 'Guest'}
                   </div>
                   <div className="text-[10px] text-mart-300 capitalize font-medium">
-                    {currentUser ? currentUser.role.replace('_', ' ') : 'Guest'}
+                    {userIsAdmin ? 'Administrator' : 'Store Staff'}
                   </div>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-mart-300 ml-0.5" />
@@ -144,76 +137,43 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {/* User Profile Header */}
                   <div className="px-4 py-3 border-b border-slate-100">
                     <div className="font-bold text-sm text-slate-900">
-                      {currentUser ? currentUser.full_name : 'Guest User'}
+                      {currentUser ? currentUser.full_name : 'Authorized User'}
                     </div>
-                    <div className="text-[11px] text-slate-500 truncate">
-                      {currentUser ? currentUser.email : 'Not signed in'}
+                    <div className="text-[11px] text-slate-500 truncate font-mono">
+                      {currentUser?.email}
                     </div>
-                    {currentUser && (
-                      <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-mart-100 text-mart-900">
-                        {currentUser.role.replace('_', ' ')}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Navigation Links */}
-                  <div className="py-1">
-                    <button
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        onNavigateToSettings();
-                      }}
-                      className="w-full px-4 py-2 flex items-center space-x-2.5 text-slate-700 hover:bg-slate-50 hover:text-mart-900 transition-colors cursor-pointer"
-                    >
-                      <Settings className="w-4 h-4 text-mart-700" />
-                      <span>Settings & Business Info</span>
-                    </button>
-                  </div>
-
-                  {/* Quick Role Switch Section */}
-                  <div className="px-4 py-2 border-t border-slate-100 bg-slate-50/50">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-                      Switch Active Role
+                    <span className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                      userIsAdmin ? 'bg-orange-100 text-orange-950 border border-orange-200' : 'bg-blue-100 text-blue-900'
+                    }`}>
+                      {userIsAdmin ? 'Admin (All Access)' : 'Staff (POS Only)'}
                     </span>
-                    <div className="grid grid-cols-2 gap-1">
-                      {(['super_admin', 'admin_manager', 'cashier', 'inventory_staff'] as AppRole[]).map(role => (
-                        <button
-                          key={role}
-                          onClick={() => handleQuickRole(role)}
-                          className={`px-2 py-1 rounded text-[11px] font-medium capitalize text-left transition-colors ${
-                            currentUser?.role === role
-                              ? 'bg-mart-900 text-white font-bold'
-                              : 'hover:bg-slate-200/70 text-slate-700'
-                          }`}
-                        >
-                          {role.replace('_', ' ')}
-                        </button>
-                      ))}
-                    </div>
                   </div>
 
-                  {/* Logout / Login button */}
-                  <div className="pt-1 border-t border-slate-100">
-                    {currentUser ? (
-                      <button
-                        onClick={handleLogout}
-                        className="w-full px-4 py-2 flex items-center space-x-2.5 text-rose-600 hover:bg-rose-50 transition-colors font-medium cursor-pointer"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>Sign Out</span>
-                      </button>
-                    ) : (
+                  {/* Navigation Links - Admin Only */}
+                  {userIsAdmin && (
+                    <div className="py-1">
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          onOpenLoginModal();
+                          onNavigateToSettings();
                         }}
-                        className="w-full px-4 py-2 flex items-center space-x-2.5 text-mart-800 hover:bg-mart-50 font-bold transition-colors cursor-pointer"
+                        className="w-full px-4 py-2 flex items-center space-x-2.5 text-slate-700 hover:bg-slate-50 hover:text-mart-900 transition-colors cursor-pointer"
                       >
-                        <LogIn className="w-4 h-4 text-mart-800" />
-                        <span>Sign In</span>
+                        <Settings className="w-4 h-4 text-mart-700" />
+                        <span>Store & System Settings</span>
                       </button>
-                    )}
+                    </div>
+                  )}
+
+                  {/* Logout / Switch Account button */}
+                  <div className="pt-1 border-t border-slate-100">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full px-4 py-2 flex items-center space-x-2.5 text-rose-600 hover:bg-rose-50 transition-colors font-medium cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out (Switch Account)</span>
+                    </button>
                   </div>
 
                 </div>

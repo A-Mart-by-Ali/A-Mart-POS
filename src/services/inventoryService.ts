@@ -71,6 +71,66 @@ export const getSuppliers = async (): Promise<Supplier[]> => {
   return mockSuppliers;
 };
 
+export const addSupplier = async (supplierData: Omit<Supplier, 'id'>): Promise<Supplier> => {
+  const newId = `sup-${Date.now().toString(36)}`;
+  const openingBal = Number(supplierData.opening_balance || 0);
+  const currentBal = Number(supplierData.current_balance !== undefined ? supplierData.current_balance : openingBal);
+
+  const newSupplier: Supplier = {
+    ...supplierData,
+    id: newId,
+    opening_balance: openingBal,
+    current_balance: currentBal,
+    status: supplierData.status || 'active',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase.from('suppliers').insert([{
+      name: supplierData.name,
+      phone: supplierData.phone || null,
+      email: supplierData.email || null,
+      address: supplierData.address || null,
+      contact_person: supplierData.contact_person || null,
+      payment_terms: supplierData.payment_terms || null,
+      opening_balance: openingBal,
+      current_balance: currentBal,
+      status: supplierData.status || 'active',
+      notes: supplierData.notes || null
+    }]).select().single();
+
+    if (error) throw error;
+    notifyListeners();
+    return data;
+  }
+
+  mockSuppliers.unshift(newSupplier);
+  notifyListeners();
+  return newSupplier;
+};
+
+export const updateSupplier = async (id: string, updates: Partial<Supplier>): Promise<Supplier> => {
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    notifyListeners();
+    return data;
+  }
+
+  mockSuppliers = mockSuppliers.map(s => (s.id === id ? { ...s, ...updates, updated_at: new Date().toISOString() } : s));
+  notifyListeners();
+  const updated = mockSuppliers.find(s => s.id === id);
+  if (!updated) throw new Error('Supplier not found');
+  return updated;
+};
+
 export const getProductsWithStock = async (): Promise<ProductWithStock[]> => {
   if (isSupabaseConfigured && supabase) {
     const { data: prods } = await supabase.from('products').select('*, categories(name), suppliers(name)');

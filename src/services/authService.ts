@@ -10,21 +10,21 @@ export const KNOWN_ACCOUNTS = {
     email: 'uk911574@gmail.com',
     password: '1221',
     role: 'super_admin' as AppRole,
-    title: 'Super Admin',
+    title: 'Admin',
     name: 'A-Mart Admin',
-    description: 'Full management: Inventory, Stock GRN, Adjustments, POS, Ledger, Suppliers, Settings.'
+    description: 'Full Management: Can see and change everything across all modules.'
   },
   staff: {
     email: 'mani911574@gmail.com',
     password: '9090',
     role: 'cashier' as AppRole,
-    title: 'Store Staff',
+    title: 'Staff',
     name: 'Store Staff',
-    description: 'Restricted view: Product List (catalog) and Point of Sale (POS) only.'
+    description: 'Restricted Access: Product List and Point of Sale (POS) only.'
   }
 };
 
-export const ROLE_PROFILES: Record<AppRole, AuthUser> = {
+export const ROLE_PROFILES: Record<'super_admin' | 'cashier', AuthUser> = {
   super_admin: {
     id: 'a1111111-1111-1111-1111-111111111111',
     full_name: 'A-Mart Admin',
@@ -44,28 +44,6 @@ export const ROLE_PROFILES: Record<AppRole, AuthUser> = {
       can_adjust_inventory: true,
       can_manage_expenses: true,
       can_view_audit_logs: true,
-      updated_at: new Date().toISOString()
-    }
-  },
-  admin_manager: {
-    id: '00000000-0000-0000-0000-000000000002',
-    full_name: 'Store Manager',
-    email: 'manager@a-mart.pk',
-    role: 'admin_manager',
-    status: 'active',
-    employee_code: 'MGR-001',
-    hire_date: '2025-03-01',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    permissions: {
-      profile_id: '00000000-0000-0000-0000-000000000002',
-      can_view_cost_price: true,
-      can_view_profit_reports: true,
-      can_apply_discount: true,
-      can_process_returns: true,
-      can_adjust_inventory: true,
-      can_manage_expenses: true,
-      can_view_audit_logs: false,
       updated_at: new Date().toISOString()
     }
   },
@@ -90,28 +68,6 @@ export const ROLE_PROFILES: Record<AppRole, AuthUser> = {
       can_view_audit_logs: false,
       updated_at: new Date().toISOString()
     }
-  },
-  inventory_staff: {
-    id: '00000000-0000-0000-0000-000000000004',
-    full_name: 'Inventory Staff',
-    email: 'inventory@a-mart.pk',
-    role: 'inventory_staff',
-    status: 'active',
-    employee_code: 'INV-001',
-    hire_date: '2025-07-01',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    permissions: {
-      profile_id: '00000000-0000-0000-0000-000000000004',
-      can_view_cost_price: true,
-      can_view_profit_reports: false,
-      can_apply_discount: false,
-      can_process_returns: false,
-      can_adjust_inventory: true,
-      can_manage_expenses: false,
-      can_view_audit_logs: false,
-      updated_at: new Date().toISOString()
-    }
   }
 };
 
@@ -121,12 +77,12 @@ export const isAdmin = (user: AuthUser | null): boolean => {
   if (!user) return false;
   return (
     user.email?.toLowerCase() === KNOWN_ACCOUNTS.admin.email.toLowerCase() ||
-    user.role === 'super_admin' ||
-    user.role === 'admin_manager'
+    user.role === 'super_admin'
   );
 };
 
 export const isStaff = (user: AuthUser | null): boolean => {
+  if (!user) return false;
   return !isAdmin(user);
 };
 
@@ -137,8 +93,8 @@ const getInitialUser = (): AuthUser | null => {
   } catch (e) {
     // fallback
   }
-  // Default to Admin profile
-  return ROLE_PROFILES.super_admin;
+  // No user by default: Requires authenticating through the Login Page
+  return null;
 };
 
 let currentUser: AuthUser | null = getInitialUser();
@@ -158,20 +114,16 @@ export const getCurrentUser = (): AuthUser | null => {
   return currentUser;
 };
 
-export const loginAsRole = (role: AppRole): AuthUser => {
-  const user = ROLE_PROFILES[role];
-  currentUser = user;
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-  notify();
-  return user;
-};
-
 export const loginWithEmail = async (email: string, password?: string): Promise<AuthUser> => {
   const cleanEmail = email.trim().toLowerCase();
   const cleanPassword = password?.trim() || '';
 
-  // 1. Try Supabase Auth first
-  if (isSupabaseConfigured && supabase && cleanPassword) {
+  if (!cleanEmail || !cleanPassword) {
+    throw new Error('Please provide both email and password.');
+  }
+
+  // 1. Authenticate with Supabase Auth
+  if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
@@ -183,23 +135,25 @@ export const loginWithEmail = async (email: string, password?: string): Promise<
       }
 
       if (data.user) {
-        // Fetch profile and permissions from Supabase
         const { data: profile } = await supabase
           .from('profiles')
           .select('*, user_permissions(*)')
           .eq('id', data.user.id)
           .maybeSingle();
 
-        const role = (profile?.role || (cleanEmail === KNOWN_ACCOUNTS.admin.email ? 'super_admin' : 'cashier')) as AppRole;
-        const defaultPerms = ROLE_PROFILES[role]?.permissions || ROLE_PROFILES.cashier.permissions;
+        const isUserAdminEmail = cleanEmail === KNOWN_ACCOUNTS.admin.email.toLowerCase();
+        const role = (profile?.role || (isUserAdminEmail ? 'super_admin' : 'cashier')) as AppRole;
+        const defaultPerms = isUserAdminEmail
+          ? ROLE_PROFILES.super_admin.permissions
+          : ROLE_PROFILES.cashier.permissions;
 
         const user: AuthUser = {
           id: data.user.id,
           email: data.user.email || cleanEmail,
-          full_name: profile?.full_name || (cleanEmail === KNOWN_ACCOUNTS.admin.email ? KNOWN_ACCOUNTS.admin.name : KNOWN_ACCOUNTS.staff.name),
+          full_name: profile?.full_name || (isUserAdminEmail ? KNOWN_ACCOUNTS.admin.name : KNOWN_ACCOUNTS.staff.name),
           role: role,
           status: profile?.status || 'active',
-          employee_code: profile?.employee_code || (cleanEmail === KNOWN_ACCOUNTS.admin.email ? 'ADM-001' : 'STF-001'),
+          employee_code: profile?.employee_code || (isUserAdminEmail ? 'ADM-001' : 'STF-001'),
           hire_date: profile?.hire_date || null,
           created_at: profile?.created_at || new Date().toISOString(),
           updated_at: profile?.updated_at || new Date().toISOString(),
@@ -215,14 +169,14 @@ export const loginWithEmail = async (email: string, password?: string): Promise<
       if (e.message && !e.message.includes('fetch') && !e.message.includes('Network')) {
         throw e;
       }
-      console.warn('Supabase auth network issue, falling back to local verification:', e);
+      console.warn('Supabase auth network issue, verifying with verified credentials:', e);
     }
   }
 
-  // 2. Local credential validation fallback
-  if (cleanEmail === KNOWN_ACCOUNTS.admin.email) {
-    if (cleanPassword && cleanPassword !== KNOWN_ACCOUNTS.admin.password) {
-      throw new Error('Invalid credentials. Password for Admin is 1221');
+  // 2. Direct verification for known accounts if offline
+  if (cleanEmail === KNOWN_ACCOUNTS.admin.email.toLowerCase()) {
+    if (cleanPassword !== KNOWN_ACCOUNTS.admin.password) {
+      throw new Error('Invalid password. Password for Admin is 1221');
     }
     const user = ROLE_PROFILES.super_admin;
     currentUser = user;
@@ -231,9 +185,9 @@ export const loginWithEmail = async (email: string, password?: string): Promise<
     return user;
   }
 
-  if (cleanEmail === KNOWN_ACCOUNTS.staff.email) {
-    if (cleanPassword && cleanPassword !== KNOWN_ACCOUNTS.staff.password) {
-      throw new Error('Invalid credentials. Password for Staff is 9090');
+  if (cleanEmail === KNOWN_ACCOUNTS.staff.email.toLowerCase()) {
+    if (cleanPassword !== KNOWN_ACCOUNTS.staff.password) {
+      throw new Error('Invalid password. Password for Staff is 9090');
     }
     const user = ROLE_PROFILES.cashier;
     currentUser = user;
@@ -242,18 +196,38 @@ export const loginWithEmail = async (email: string, password?: string): Promise<
     return user;
   }
 
-  // 3. Fallback match
-  const matched = Object.values(ROLE_PROFILES).find(p => p.email?.toLowerCase() === cleanEmail);
-  const user = matched || {
-    ...ROLE_PROFILES.cashier,
-    full_name: cleanEmail.split('@')[0],
-    email: cleanEmail
-  };
+  throw new Error('Unauthorized user. Only registered Admin or Staff can sign in.');
+};
 
-  currentUser = user;
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-  notify();
-  return user;
+export const requestPasswordReset = async (email: string): Promise<string> => {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) {
+    throw new Error('Please enter your registered email address.');
+  }
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: window.location.origin
+      });
+      if (error) {
+        throw new Error(error.message);
+      }
+      return `Password recovery link sent to ${cleanEmail}. Please check your inbox.`;
+    } catch (e: any) {
+      if (e.message && !e.message.includes('fetch') && !e.message.includes('Network')) {
+        throw e;
+      }
+    }
+  }
+
+  // Known account offline fallback
+  if (cleanEmail === KNOWN_ACCOUNTS.admin.email.toLowerCase() || cleanEmail === KNOWN_ACCOUNTS.staff.email.toLowerCase()) {
+    const isAdm = cleanEmail === KNOWN_ACCOUNTS.admin.email.toLowerCase();
+    return `Account recognized (${isAdm ? 'Administrator' : 'Staff'}). Your password is: ${isAdm ? KNOWN_ACCOUNTS.admin.password : KNOWN_ACCOUNTS.staff.password}`;
+  }
+
+  return `If an account exists for ${cleanEmail}, instructions have been sent.`;
 };
 
 export const logout = async (): Promise<void> => {
@@ -271,23 +245,26 @@ export const logout = async (): Promise<void> => {
 
 // Listen for Supabase auth state changes
 if (isSupabaseConfigured && supabase) {
-  supabase.auth.onAuthStateChange(async (event, session) => {
+  const client = supabase;
+  client.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_OUT') {
       currentUser = null;
       localStorage.removeItem(AUTH_STORAGE_KEY);
       notify();
     } else if (session?.user && (!currentUser || currentUser.id !== session.user.id)) {
-      const { data: profile } = await supabase
+      const { data: profile } = await client
         .from('profiles')
         .select('*, user_permissions(*)')
         .eq('id', session.user.id)
         .maybeSingle();
 
       if (profile) {
-        const role = profile.role as AppRole;
+        const isUserAdmin = profile.email?.toLowerCase() === KNOWN_ACCOUNTS.admin.email.toLowerCase() || profile.role === 'super_admin';
+        const role = isUserAdmin ? 'super_admin' : 'cashier';
         const user: AuthUser = {
           ...profile,
-          permissions: profile.user_permissions || ROLE_PROFILES[role]?.permissions || ROLE_PROFILES.cashier.permissions
+          role,
+          permissions: profile.user_permissions || (isUserAdmin ? ROLE_PROFILES.super_admin.permissions : ROLE_PROFILES.cashier.permissions)
         };
         currentUser = user;
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));

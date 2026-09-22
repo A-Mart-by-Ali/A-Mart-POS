@@ -11,6 +11,7 @@ import {
   DollarSign,
   Receipt
 } from 'lucide-react';
+import { Modal } from '../components/common/Modal';
 import {
   getCurrentShift,
   openCashierShift,
@@ -93,7 +94,7 @@ export const ShiftsView: React.FC = () => {
           {shift && shift.status === 'open' ? (
             <button
               onClick={() => setIsCloseModalOpen(true)}
-              className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-rose-600 text-white hover:bg-rose-700 text-sm font-semibold shadow-sm transition-all"
+              className="flex items-center space-x-2 px-5 py-2.5 rounded-full bg-rose-600 text-white hover:bg-rose-700 text-xs font-semibold shadow-sm transition-all cursor-pointer"
             >
               <Lock className="w-4 h-4" />
               <span>Close Shift & Reconcile</span>
@@ -101,7 +102,7 @@ export const ShiftsView: React.FC = () => {
           ) : (
             <button
               onClick={() => setIsOpenModalOpen(true)}
-              className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-mart-900 text-white hover:bg-mart-800 text-sm font-semibold shadow-sm transition-all"
+              className="flex items-center space-x-2 px-5 py-2.5 rounded-full bg-mart-900 text-white hover:bg-mart-800 text-xs font-semibold shadow-sm transition-all cursor-pointer"
             >
               <Unlock className="w-4 h-4 text-mart-200" />
               <span>Open New Cashier Shift</span>
@@ -117,14 +118,14 @@ export const ShiftsView: React.FC = () => {
           <div
             className={`p-5 rounded-2xl border shadow-sm flex items-center justify-between ${
               shift.status === 'open'
-                ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                ? 'bg-orange-50/80 border-orange-200 text-orange-950'
                 : 'bg-slate-100 border-slate-200 text-slate-700'
             }`}
           >
             <div className="flex items-center space-x-3">
               <div
                 className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  shift.status === 'open' ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-slate-700'
+                  shift.status === 'open' ? 'bg-orange-600 text-white' : 'bg-slate-300 text-slate-700'
                 }`}
               >
                 {shift.status === 'open' ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
@@ -142,7 +143,7 @@ export const ShiftsView: React.FC = () => {
 
             <span
               className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                shift.status === 'open' ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-800'
+                shift.status === 'open' ? 'bg-orange-200 text-orange-950' : 'bg-slate-200 text-slate-800'
               }`}
             >
               {shift.status}
@@ -163,8 +164,8 @@ export const ShiftsView: React.FC = () => {
 
             {/* Cash Sales */}
             <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">Cash Sales (In)</span>
-              <div className="text-2xl font-extrabold text-emerald-700 font-mono">
+              <span className="text-xs font-bold uppercase tracking-wider text-orange-600">Cash Sales (In)</span>
+              <div className="text-2xl font-extrabold text-orange-700 font-mono">
                 +Rs. {shift.cash_sales.toLocaleString()}
               </div>
               <p className="text-[11px] text-slate-500">Collected from cash checkouts</p>
@@ -227,7 +228,7 @@ export const ShiftsView: React.FC = () => {
                   <span className="text-slate-500 block">Variance (Over / Short):</span>
                   <strong
                     className={`font-mono text-sm font-bold ${
-                      (shift.cash_difference || 0) >= 0 ? 'text-emerald-700' : 'text-rose-700'
+                      (shift.cash_difference || 0) >= 0 ? 'text-orange-700' : 'text-rose-700'
                     }`}
                   >
                     {(shift.cash_difference || 0) >= 0 ? `+Rs. ${shift.cash_difference}` : `-Rs. ${Math.abs(shift.cash_difference || 0)}`}
@@ -245,108 +246,104 @@ export const ShiftsView: React.FC = () => {
       )}
 
       {/* OPEN SHIFT MODAL */}
-      {isOpenModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-200 p-6 space-y-4">
-            <h3 className="font-bold text-base text-slate-900">Open Cashier Shift</h3>
-            <p className="text-xs text-slate-500">
-              Declare opening cash float placed in Register 1 cash drawer.
-            </p>
-
-            <form onSubmit={handleOpenShift} className="space-y-4 text-xs">
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">Opening Cash Float (Rs.) *</label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  value={openingFloat}
-                  onChange={(e) => setOpeningFloat(Number(e.target.value))}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-bold font-mono focus:ring-2 focus:ring-mart-800"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsOpenModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-mart-900 text-white font-semibold hover:bg-mart-800"
-                >
-                  Confirm & Open Register
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={isOpenModalOpen}
+        onClose={() => setIsOpenModalOpen(false)}
+        size="md"
+        icon={<DollarSign className="w-5 h-5 text-mart-900" />}
+        title="Open Cashier Shift"
+        subtitle="Declare opening cash float placed in Register 1 cash drawer"
+      >
+        <form onSubmit={handleOpenShift} className="space-y-4 text-xs">
+          <div>
+            <label className="font-semibold text-slate-700 block mb-1">Opening Cash Float (Rs.) *</label>
+            <input
+              type="number"
+              required
+              min="0"
+              value={openingFloat}
+              onChange={(e) => setOpeningFloat(Number(e.target.value))}
+              className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm font-bold font-mono focus:ring-2 focus:ring-mart-800 bg-slate-50/50"
+            />
           </div>
-        </div>
-      )}
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsOpenModalOpen(false)}
+              className="px-5 py-2.5 rounded-full border border-slate-200 text-slate-600 font-semibold cursor-pointer hover:bg-slate-50 transition-all text-xs"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2.5 rounded-full bg-mart-900 text-white font-semibold hover:bg-mart-800 cursor-pointer transition-all shadow-sm text-xs hover:shadow-mart"
+            >
+              Confirm & Open Register
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* CLOSE SHIFT MODAL */}
-      {isCloseModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-200 p-6 space-y-4">
-            <h3 className="font-bold text-base text-slate-900">Close Cashier Shift & Reconcile</h3>
-            <p className="text-xs text-slate-500">
-              Enter the counted physical cash in the drawer to calculate discrepancies.
-            </p>
-
-            <form onSubmit={handleCloseShift} className="space-y-4 text-xs">
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex justify-between items-center">
-                <span className="text-slate-500">Expected in Drawer:</span>
-                <strong className="font-mono text-sm text-slate-900">Rs. {expectedCash.toLocaleString()}</strong>
-              </div>
-
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">Actual Physical Cash Counted (Rs.) *</label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  value={actualCash}
-                  onChange={(e) => setActualCash(Number(e.target.value))}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-bold font-mono focus:ring-2 focus:ring-mart-800"
-                />
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center">
-                <span className="text-slate-500">Discrepancy:</span>
-                <strong
-                  className={`font-mono text-sm ${
-                    discrepancy === 0
-                      ? 'text-emerald-700'
-                      : discrepancy > 0
-                      ? 'text-emerald-700'
-                      : 'text-rose-700'
-                  }`}
-                >
-                  {discrepancy === 0 ? 'Balanced (Rs. 0)' : discrepancy > 0 ? `+Rs. ${discrepancy} (Overage)` : `-Rs. ${Math.abs(discrepancy)} (Shortage)`}
-                </strong>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCloseModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-rose-600 text-white font-semibold hover:bg-rose-700"
-                >
-                  Lock & Close Register
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={isCloseModalOpen}
+        onClose={() => setIsCloseModalOpen(false)}
+        size="md"
+        icon={<Clock className="w-5 h-5 text-mart-900" />}
+        title="Close Cashier Shift & Reconcile"
+        subtitle="Enter counted physical cash in drawer to calculate discrepancies"
+      >
+        <form onSubmit={handleCloseShift} className="space-y-4 text-xs">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex justify-between items-center">
+            <span className="text-slate-500 font-medium">Expected in Drawer:</span>
+            <strong className="font-mono text-sm text-slate-900">Rs. {expectedCash.toLocaleString()}</strong>
           </div>
-        </div>
-      )}
+
+          <div>
+            <label className="font-semibold text-slate-700 block mb-1">Actual Physical Cash Counted (Rs.) *</label>
+            <input
+              type="number"
+              required
+              min="0"
+              value={actualCash}
+              onChange={(e) => setActualCash(Number(e.target.value))}
+              className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm font-bold font-mono focus:ring-2 focus:ring-mart-800 bg-slate-50/50"
+            />
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex justify-between items-center">
+            <span className="text-slate-500 font-medium">Discrepancy:</span>
+            <strong
+              className={`font-mono text-sm font-bold ${
+                discrepancy === 0
+                  ? 'text-emerald-700'
+                  : discrepancy > 0
+                  ? 'text-orange-700'
+                  : 'text-rose-700'
+              }`}
+            >
+              {discrepancy === 0 ? 'Balanced (Rs. 0)' : discrepancy > 0 ? `+Rs. ${discrepancy.toLocaleString()} (Overage)` : `-Rs. ${Math.abs(discrepancy).toLocaleString()} (Shortage)`}
+            </strong>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsCloseModalOpen(false)}
+              className="px-5 py-2.5 rounded-full border border-slate-200 text-slate-600 font-semibold cursor-pointer hover:bg-slate-50 transition-all text-xs"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2.5 rounded-full bg-rose-600 text-white font-semibold hover:bg-rose-700 cursor-pointer transition-all shadow-sm text-xs"
+            >
+              Lock & Close Register
+            </button>
+          </div>
+        </form>
+      </Modal>
 
     </div>
   );

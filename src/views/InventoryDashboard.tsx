@@ -108,21 +108,21 @@ export const InventoryDashboard: React.FC<InventoryDashboardProps> = ({ onNaviga
         <div className="flex flex-wrap gap-2.5">
           <button
             onClick={() => onNavigate('receiving')}
-            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-mart-900 text-white hover:bg-mart-800 text-xs font-semibold shadow-sm transition-all"
+            className="flex items-center space-x-2 px-4 py-2 rounded-full bg-mart-900 text-white hover:bg-mart-800 text-xs font-semibold shadow-sm transition-all cursor-pointer"
           >
             <Truck className="w-4 h-4 text-mart-200" />
             <span>Receive Stock (PO)</span>
           </button>
           <button
             onClick={() => onNavigate('adjustments')}
-            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-sm transition-all"
+            className="flex items-center space-x-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-sm transition-all cursor-pointer"
           >
             <SlidersHorizontal className="w-4 h-4 text-mart-700" />
             <span>Stock Adjustment</span>
           </button>
           <button
             onClick={() => onNavigate('pos')}
-            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-semibold shadow-sm transition-all"
+            className="flex items-center space-x-2 px-4 py-2 rounded-full bg-orange-600 text-white hover:bg-orange-700 text-xs font-semibold shadow-sm transition-all cursor-pointer"
           >
             <ShoppingBag className="w-4 h-4 text-white" />
             <span>Open POS Terminal</span>
@@ -147,7 +147,7 @@ export const InventoryDashboard: React.FC<InventoryDashboardProps> = ({ onNaviga
               <span>Retail Value: <strong>{formatCurrency(metrics.totalRetailValue)}</strong></span>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-emerald-700 font-medium">
+          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-orange-700 font-medium">
             <span>Potential Gross Profit:</span>
             <span className="font-bold">{formatCurrency(metrics.potentialProfit)} ({marginPercentage}%)</span>
           </div>
@@ -233,7 +233,7 @@ export const InventoryDashboard: React.FC<InventoryDashboardProps> = ({ onNaviga
 
           {lowStockItems.length === 0 ? (
             <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
-              <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+              <CheckCircle2 className="w-8 h-8 text-orange-500 mx-auto mb-2" />
               <p className="text-sm font-medium text-slate-700">All inventory levels are optimal</p>
               <p className="text-xs text-slate-400 mt-0.5">No products are currently under minimum stock thresholds.</p>
             </div>
@@ -276,7 +276,7 @@ export const InventoryDashboard: React.FC<InventoryDashboardProps> = ({ onNaviga
                       <td className="py-2.5 px-3 text-right">
                         <button
                           onClick={() => onNavigate('receiving')}
-                          className="px-2.5 py-1 rounded-lg bg-mart-50 hover:bg-mart-100 text-mart-900 border border-mart-200 text-[11px] font-semibold transition-all"
+                          className="px-3.5 py-1 rounded-full bg-mart-50 hover:bg-mart-100 text-mart-900 border border-mart-200 text-[11px] font-semibold transition-all cursor-pointer"
                         >
                           Reorder
                         </button>
@@ -298,7 +298,7 @@ export const InventoryDashboard: React.FC<InventoryDashboardProps> = ({ onNaviga
             </div>
             <button
               onClick={() => onNavigate('ledger')}
-              className="text-xs font-semibold text-mart-700 hover:text-mart-900"
+              className="text-xs font-semibold text-mart-700 hover:text-mart-900 cursor-pointer"
             >
               Full Ledger &rarr;
             </button>
@@ -312,9 +312,9 @@ export const InventoryDashboard: React.FC<InventoryDashboardProps> = ({ onNaviga
                   <div className="space-y-1">
                     <div className="flex items-center gap-1.5">
                       <span
-                        className={`text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                        className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
                           tx.transaction_type === 'purchase'
-                            ? 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-orange-100 text-orange-800'
                             : tx.transaction_type === 'sale'
                             ? 'bg-blue-100 text-blue-800'
                             : tx.transaction_type === 'damage' || tx.transaction_type === 'expiry'
@@ -339,7 +339,7 @@ export const InventoryDashboard: React.FC<InventoryDashboardProps> = ({ onNaviga
                   <div className="text-right">
                     <div
                       className={`text-xs font-extrabold font-mono ${
-                        isPositive ? 'text-emerald-600' : 'text-slate-800'
+                        isPositive ? 'text-orange-600' : 'text-slate-800'
                       }`}
                     >
                       {isPositive ? `+${tx.quantity}` : tx.quantity}

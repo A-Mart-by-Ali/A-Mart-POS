@@ -63,7 +63,7 @@ export const StockLedgerView: React.FC = () => {
 
         <button
           onClick={loadTransactions}
-          className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-sm transition-all"
+          className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-sm transition-all cursor-pointer"
         >
           <RefreshCw className="w-3.5 h-3.5 text-mart-700" />
           <span>Refresh Ledger</span>
@@ -79,7 +79,7 @@ export const StockLedgerView: React.FC = () => {
             placeholder="Search by Product Name, SKU, Reason, or Document..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-mart-800/20 focus:border-mart-800 bg-slate-50/50"
+            className="w-full pl-10 pr-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-mart-800/20 focus:border-mart-800 bg-slate-50/50"
           />
         </div>
 
@@ -87,7 +87,7 @@ export const StockLedgerView: React.FC = () => {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-mart-800/20 focus:border-mart-800 bg-slate-50/50 text-slate-700"
+            className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-mart-800/20 focus:border-mart-800 bg-slate-50/50 text-slate-700"
           >
             <option value="all">All Movements</option>
             <option value="purchase">Purchases (Stock In)</option>
@@ -150,7 +150,7 @@ export const StockLedgerView: React.FC = () => {
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
                             tx.transaction_type === 'purchase' || tx.transaction_type === 'initial_stock'
-                              ? 'bg-emerald-100 text-emerald-800'
+                              ? 'bg-orange-100 text-orange-800'
                               : tx.transaction_type === 'sale'
                               ? 'bg-blue-100 text-blue-800'
                               : tx.transaction_type === 'damage' || tx.transaction_type === 'expiry'
@@ -170,7 +170,7 @@ export const StockLedgerView: React.FC = () => {
                       <td className="py-3 px-3 text-right whitespace-nowrap font-mono font-bold">
                         <span
                           className={`inline-flex items-center gap-0.5 ${
-                            isPositive ? 'text-emerald-600' : 'text-slate-800'
+                            isPositive ? 'text-orange-600' : 'text-slate-800'
                           }`}
                         >
                           {isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5 text-rose-500" />}
