@@ -167,16 +167,16 @@ export const SuppliersView: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
             <Building2 className="w-6 h-6 text-mart-800" />
-            <span>Suppliers & Accounts Payable</span>
+            <span>Suppliers & Vendors</span>
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Manage distributor relationships, payment terms, and outstanding consignment liabilities.
+            Manage vendors, suppliers, and balances.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="bg-white border border-slate-200 px-5 py-2.5 rounded-full shadow-xs flex items-center gap-3">
-            <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Total Accounts Payable:</span>
+            <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Total Balance Due:</span>
             <span className="text-base font-black font-mono text-mart-900">
               Rs. {totalPayable.toLocaleString()}
             </span>
@@ -188,7 +188,7 @@ export const SuppliersView: React.FC = () => {
             className="flex items-center space-x-2 px-5 py-2.5 rounded-full bg-mart-900 text-white hover:bg-mart-800 text-xs font-semibold shadow-sm transition-all cursor-pointer hover:shadow-mart"
           >
             <Plus className="w-4 h-4 text-mart-200" />
-            <span>Add New Vendor</span>
+            <span>Add Vendor</span>
           </button>
         </div>
       </div>
@@ -335,12 +335,7 @@ export const SuppliersView: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         size="xl"
         icon={<Building2 className="w-5 h-5 text-mart-900" />}
-        title={editingSupplier ? 'Edit Vendor Details' : 'Add New Vendor / Supplier'}
-        subtitle={
-          editingSupplier
-            ? 'Update contact terms, payment cycle, and address details'
-            : 'Register a new distributor or supplier in A-Mart'
-        }
+        title={editingSupplier ? 'Edit Vendor' : 'Add Vendor'}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {errorMsg && (
@@ -354,7 +349,7 @@ export const SuppliersView: React.FC = () => {
             {/* Vendor Name */}
             <div>
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wide block mb-1">
-                Vendor / Company Name <span className="text-red-500">*</span>
+                Vendor Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -370,7 +365,7 @@ export const SuppliersView: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wide block mb-1">
-                  Contact Person / Representative
+                  Contact Person
                 </label>
                 <input
                   type="text"
@@ -432,7 +427,7 @@ export const SuppliersView: React.FC = () => {
             {/* Address */}
             <div>
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wide block mb-1">
-                Physical Address / Warehouse Location
+                Address
               </label>
               <input
                 type="text"
@@ -448,7 +443,7 @@ export const SuppliersView: React.FC = () => {
               {!editingSupplier ? (
                 <div>
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wide block mb-1">
-                    Opening Balance (Rs. Payable)
+                    Opening Balance (Rs.)
                   </label>
                   <input
                     type="number"
@@ -458,31 +453,29 @@ export const SuppliersView: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, opening_balance: parseFloat(e.target.value) || 0 })}
                     className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-mart-800/20 focus:border-mart-800 bg-slate-50/50 font-mono"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1 pl-2">Initial pending debt owed to this vendor.</p>
                 </div>
               ) : (
                 <div>
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wide block mb-1">
-                    Current Balance (Rs. Payable)
+                    Current Balance (Rs.)
                   </label>
                   <div className="px-4 py-2.5 rounded-full border border-slate-100 bg-slate-100/70 text-sm font-mono font-bold text-mart-900">
                     Rs. {(editingSupplier.current_balance || 0).toLocaleString()}
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1 pl-2">Tracked automatically through POs and payments.</p>
                 </div>
               )}
 
               <div>
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wide block mb-1">
-                  Vendor Status
+                  Status
                 </label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as ActiveStatus })}
                   className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-mart-800/20 focus:border-mart-800 bg-slate-50/50 text-slate-700"
                 >
-                  <option value="active">Active Vendor</option>
-                  <option value="inactive">Inactive / Suspended</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </div>
             </div>
@@ -490,7 +483,7 @@ export const SuppliersView: React.FC = () => {
             {/* Notes */}
             <div>
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wide block mb-1">
-                Notes / Category Supplied
+                Notes
               </label>
               <input
                 type="text"
@@ -518,7 +511,7 @@ export const SuppliersView: React.FC = () => {
               className="px-6 py-2.5 rounded-full bg-mart-900 text-white hover:bg-mart-800 font-semibold text-xs shadow-sm cursor-pointer transition-all flex items-center gap-2 disabled:opacity-50 hover:shadow-mart"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin text-white" />}
-              <span>{editingSupplier ? 'Update Vendor' : 'Save Vendor to Directory'}</span>
+              <span>{editingSupplier ? 'Update Vendor' : 'Save Vendor'}</span>
             </button>
           </div>
         </form>

@@ -251,12 +251,11 @@ export const ShiftsView: React.FC = () => {
         onClose={() => setIsOpenModalOpen(false)}
         size="md"
         icon={<DollarSign className="w-5 h-5 text-mart-900" />}
-        title="Open Cashier Shift"
-        subtitle="Declare opening cash float placed in Register 1 cash drawer"
+        title="Open Shift"
       >
         <form onSubmit={handleOpenShift} className="space-y-4 text-xs">
           <div>
-            <label className="font-semibold text-slate-700 block mb-1">Opening Cash Float (Rs.) *</label>
+            <label className="font-semibold text-slate-700 block mb-1">Starting Cash (Rs.) *</label>
             <input
               type="number"
               required
@@ -279,7 +278,7 @@ export const ShiftsView: React.FC = () => {
               type="submit"
               className="px-6 py-2.5 rounded-full bg-mart-900 text-white font-semibold hover:bg-mart-800 cursor-pointer transition-all shadow-sm text-xs hover:shadow-mart"
             >
-              Confirm & Open Register
+              Open Register
             </button>
           </div>
         </form>
@@ -291,8 +290,7 @@ export const ShiftsView: React.FC = () => {
         onClose={() => setIsCloseModalOpen(false)}
         size="md"
         icon={<Clock className="w-5 h-5 text-mart-900" />}
-        title="Close Cashier Shift & Reconcile"
-        subtitle="Enter counted physical cash in drawer to calculate discrepancies"
+        title="Close Shift"
       >
         <form onSubmit={handleCloseShift} className="space-y-4 text-xs">
           <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex justify-between items-center">
@@ -301,7 +299,7 @@ export const ShiftsView: React.FC = () => {
           </div>
 
           <div>
-            <label className="font-semibold text-slate-700 block mb-1">Actual Physical Cash Counted (Rs.) *</label>
+            <label className="font-semibold text-slate-700 block mb-1">Cash Counted (Rs.) *</label>
             <input
               type="number"
               required
@@ -313,7 +311,7 @@ export const ShiftsView: React.FC = () => {
           </div>
 
           <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex justify-between items-center">
-            <span className="text-slate-500 font-medium">Discrepancy:</span>
+            <span className="text-slate-500 font-medium">Difference:</span>
             <strong
               className={`font-mono text-sm font-bold ${
                 discrepancy === 0
@@ -323,7 +321,7 @@ export const ShiftsView: React.FC = () => {
                   : 'text-rose-700'
               }`}
             >
-              {discrepancy === 0 ? 'Balanced (Rs. 0)' : discrepancy > 0 ? `+Rs. ${discrepancy.toLocaleString()} (Overage)` : `-Rs. ${Math.abs(discrepancy).toLocaleString()} (Shortage)`}
+              {discrepancy === 0 ? 'Balanced (Rs. 0)' : discrepancy > 0 ? `+Rs. ${discrepancy.toLocaleString()} (Extra)` : `-Rs. ${Math.abs(discrepancy).toLocaleString()} (Short)`}
             </strong>
           </div>
 
@@ -339,7 +337,7 @@ export const ShiftsView: React.FC = () => {
               type="submit"
               className="px-6 py-2.5 rounded-full bg-rose-600 text-white font-semibold hover:bg-rose-700 cursor-pointer transition-all shadow-sm text-xs"
             >
-              Lock & Close Register
+              Close Shift
             </button>
           </div>
         </form>

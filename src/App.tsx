@@ -10,6 +10,7 @@ import { POSView } from './views/POSView';
 import { SuppliersView } from './views/SuppliersView';
 import { ShiftsView } from './views/ShiftsView';
 import { SettingsView } from './views/SettingsView';
+import { CategoriesVariationsView } from './views/CategoriesVariationsView';
 import { SalesAnalyticsView } from './views/SalesAnalyticsView';
 import { LoginPage } from './views/LoginPage';
 import { AnalyticsKeyModal } from './components/analytics/AnalyticsKeyModal';
@@ -148,6 +149,7 @@ export const App: React.FC = () => {
           {currentView === 'dashboard' && userIsAdmin && (
             <InventoryDashboard onNavigate={handleNavigate} />
           )}
+          {currentView === 'categories' && userIsAdmin && <CategoriesVariationsView />}
           {currentView === 'receiving' && userIsAdmin && <StockReceivingView />}
           {currentView === 'adjustments' && userIsAdmin && <StockAdjustmentView />}
           {currentView === 'ledger' && userIsAdmin && <StockLedgerView />}

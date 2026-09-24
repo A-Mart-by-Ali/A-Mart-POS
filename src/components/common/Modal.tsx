@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
-export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | 'full';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -26,7 +26,11 @@ const sizeClasses: Record<ModalSize, string> = {
   lg: 'max-w-lg',
   xl: 'max-w-xl',
   '2xl': 'max-w-2xl',
-  '3xl': 'max-w-3xl'
+  '3xl': 'max-w-3xl',
+  '4xl': 'max-w-4xl',
+  '5xl': 'max-w-5xl',
+  '6xl': 'max-w-6xl',
+  full: 'max-w-7xl'
 };
 
 export const Modal: React.FC<ModalProps> = ({
@@ -78,14 +82,14 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div
       onClick={handleBackdropClick}
-      className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in font-sans"
+      className="fixed inset-0 bg-slate-900/15 backdrop-blur-[1px] flex items-center justify-center p-4 z-50 animate-fade-in font-sans"
       role="dialog"
       aria-modal="true"
     >
       <div
         ref={modalRef}
         onClick={(e) => e.stopPropagation()}
-        className={`bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] w-full animate-modal ${sizeClasses[size]} ${className}`}
+        className={`bg-white rounded-3xl shadow-xl border border-slate-200/80 overflow-hidden flex flex-col max-h-[92vh] w-full animate-modal ${sizeClasses[size]} ${className}`}
       >
         {/* Modal Header */}
         {centeredHeader ? (

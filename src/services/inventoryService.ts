@@ -63,6 +63,125 @@ export const getCategories = async (): Promise<Category[]> => {
   return mockCategories;
 };
 
+export const getAllCategories = async (): Promise<Category[]> => {
+  if (isSupabaseConfigured && supabase) {
+    const { data } = await supabase.from('categories').select('*').order('name');
+    return data || [];
+  }
+  return mockCategories;
+};
+
+export const addCategory = async (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at'>): Promise<Category> => {
+  const newId = `cat-${Date.now().toString(36)}`;
+  const newCat: Category = {
+    ...categoryData,
+    id: newId,
+    is_active: categoryData.is_active !== undefined ? categoryData.is_active : true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase.from('categories').insert([{
+      name: categoryData.name,
+      description: categoryData.description || null,
+      is_active: categoryData.is_active !== undefined ? categoryData.is_active : true
+    }]).select().single();
+    if (error) throw error;
+    notifyListeners();
+    return data;
+  }
+
+  mockCategories.push(newCat);
+  notifyListeners();
+  return newCat;
+};
+
+export const updateCategory = async (id: string, updates: Partial<Category>): Promise<Category> => {
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase
+      .from('categories')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    notifyListeners();
+    return data;
+  }
+
+  const idx = mockCategories.findIndex(c => c.id === id);
+  if (idx === -1) throw new Error('Category not found');
+  mockCategories[idx] = { ...mockCategories[idx], ...updates, updated_at: new Date().toISOString() };
+  notifyListeners();
+  return mockCategories[idx];
+};
+
+export const deleteCategory = async (id: string): Promise<void> => {
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from('categories').delete().eq('id', id);
+    if (error) throw error;
+    notifyListeners();
+    return;
+  }
+
+  mockCategories = mockCategories.filter(c => c.id !== id);
+  notifyListeners();
+};
+
+export interface VariationPresetGroup {
+  id: string;
+  name: string;
+  unit: string;
+  options: string[];
+}
+
+export const DEFAULT_VARIATION_PRESETS: VariationPresetGroup[] = [
+  {
+    id: 'volume',
+    name: 'Liquid / Volume',
+    unit: 'litres',
+    options: ['100ml', '250ml', '500ml', '1 Litre', '1.5 Litre', '2 Litre', '5 Litre']
+  },
+  {
+    id: 'weight',
+    name: 'Solid / Weight',
+    unit: 'kg',
+    options: ['50g', '100g', '250g', '500g', '1kg', '2kg', '5kg', '10kg', '25kg']
+  },
+  {
+    id: 'packaging',
+    name: 'Packaging / Bundles',
+    unit: 'packs',
+    options: ['Single Pack', 'Half Roll', 'Family Pack', 'Box (6 pcs)', 'Box (12 pcs)', 'Carton (24 pcs)']
+  },
+  {
+    id: 'sizes',
+    name: 'Sizes',
+    unit: 'pcs',
+    options: ['Small', 'Medium', 'Large', 'Extra Large']
+  }
+];
+
+export const getVariationPresets = (): VariationPresetGroup[] => {
+  try {
+    const saved = localStorage.getItem('amart_variation_presets');
+    if (saved) return JSON.parse(saved);
+  } catch {
+    console.warn('Failed to load variation presets from localStorage');
+  }
+  return DEFAULT_VARIATION_PRESETS;
+};
+
+export const saveVariationPresets = (presets: VariationPresetGroup[]) => {
+  try {
+    localStorage.setItem('amart_variation_presets', JSON.stringify(presets));
+    notifyListeners();
+  } catch {
+    console.warn('Failed to save variation presets');
+  }
+};
+
 export const getSuppliers = async (): Promise<Supplier[]> => {
   if (isSupabaseConfigured && supabase) {
     const { data } = await supabase.from('suppliers').select('*').order('name');
@@ -176,26 +295,53 @@ export const getProductsWithStock = async (): Promise<ProductWithStock[]> => {
   });
 };
 
-export const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
+export type NewProductPayload = Omit<Product, 'id' | 'created_at' | 'updated_at'> & {
+  initial_stock?: number;
+};
+
+export const addProduct = async (productData: NewProductPayload): Promise<Product> => {
+  const { initial_stock, ...productFields } = productData;
   const newId = `prod-${Date.now().toString(36)}`;
   const newProduct: Product = {
-    ...productData,
+    ...productFields,
     id: newId,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
+  const initQty = Number(initial_stock) || 0;
 
   if (isSupabaseConfigured && supabase) {
-    const { data, error } = await supabase.from('products').insert([productData]).select().single();
+    const { data, error } = await supabase.from('products').insert([productFields]).select().single();
     if (error) throw error;
 
     const { data: loc } = await supabase.from('locations').select('id').eq('is_default', true).single();
-    if (loc && data?.id) {
-      await supabase.from('inventory').insert([{
-        product_id: data.id,
-        location_id: loc.id,
-        quantity: 0
-      }]);
+    const locId = loc?.id;
+
+    if (locId && data?.id) {
+      if (initQty > 0) {
+        try {
+          await supabase.rpc('adjust_stock', {
+            p_payload: {
+              type: 'stock_count',
+              reason: 'Initial stock on product creation',
+              items: [{ product_id: data.id, quantity_change: initQty }]
+            }
+          });
+        } catch (rpcErr) {
+          console.warn('adjust_stock RPC failed, falling back to direct inventory upsert:', rpcErr);
+          await supabase.from('inventory').upsert([{
+            product_id: data.id,
+            location_id: locId,
+            quantity: initQty
+          }]);
+        }
+      } else {
+        await supabase.from('inventory').insert([{
+          product_id: data.id,
+          location_id: locId,
+          quantity: 0
+        }]);
+      }
     }
 
     notifyListeners();
@@ -207,13 +353,137 @@ export const addProduct = async (productData: Omit<Product, 'id'>): Promise<Prod
     id: `inv-${Date.now().toString(36)}`,
     product_id: newId,
     location_id: INITIAL_LOCATION.id,
-    quantity: 0,
+    quantity: initQty,
     reserved_quantity: 0,
     updated_at: new Date().toISOString()
   };
 
+  if (initQty > 0) {
+    mockTransactions.unshift({
+      id: `tx-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      product_id: newId,
+      location_id: INITIAL_LOCATION.id,
+      transaction_type: 'initial_stock',
+      quantity: initQty,
+      previous_quantity: 0,
+      new_quantity: initQty,
+      unit_cost: productFields.cost_price,
+      reason: 'Initial stock on product creation',
+      created_at: new Date().toISOString()
+    });
+  }
+
   notifyListeners();
   return newProduct;
+};
+
+export const addProductsBulk = async (
+  products: NewProductPayload[]
+): Promise<{ count: number; products: Product[] }> => {
+  if (!products || products.length === 0) return { count: 0, products: [] };
+
+  if (isSupabaseConfigured && supabase) {
+    const cleanProducts = products.map(({ initial_stock, ...p }) => p);
+
+    const { data: inserted, error } = await supabase.from('products').insert(cleanProducts).select();
+    if (error) throw error;
+
+    const { data: loc } = await supabase.from('locations').select('id').eq('is_default', true).single();
+    const locId = loc?.id;
+
+    if (locId && inserted && inserted.length > 0) {
+      const stockItems = inserted
+        .map(p => {
+          const original = products.find(orig => orig.sku === p.sku);
+          const qty = Number(original?.initial_stock) || 0;
+          return { product_id: p.id, quantity_change: qty };
+        })
+        .filter(item => item.quantity_change > 0);
+
+      if (stockItems.length > 0) {
+        try {
+          await supabase.rpc('adjust_stock', {
+            p_payload: {
+              type: 'stock_count',
+              reason: 'Initial stock on bulk product import',
+              items: stockItems
+            }
+          });
+        } catch (rpcErr) {
+          console.warn('adjust_stock RPC failed for bulk:', rpcErr);
+          const invRows = stockItems.map(item => ({
+            product_id: item.product_id,
+            location_id: locId,
+            quantity: item.quantity_change
+          }));
+          await supabase.from('inventory').upsert(invRows);
+        }
+      }
+
+      const zeroStockItems = inserted
+        .filter(p => !stockItems.some(si => si.product_id === p.id))
+        .map(p => ({
+          product_id: p.id,
+          location_id: locId,
+          quantity: 0
+        }));
+
+      if (zeroStockItems.length > 0) {
+        try {
+          await supabase.from('inventory').insert(zeroStockItems);
+        } catch {
+          // ignore duplicate insert errors if any
+        }
+      }
+    }
+
+    notifyListeners();
+    return { count: inserted?.length || 0, products: inserted || [] };
+  }
+
+  // Standalone / Mock Engine
+  const createdProducts: Product[] = [];
+  for (const item of products) {
+    const { initial_stock, ...productFields } = item;
+    const newId = `prod-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+    const newProd: Product = {
+      ...productFields,
+      id: newId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    const initQty = Number(initial_stock) || 0;
+
+    mockProducts.unshift(newProd);
+    mockInventory[newId] = {
+      id: `inv-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
+      product_id: newId,
+      location_id: INITIAL_LOCATION.id,
+      quantity: initQty,
+      reserved_quantity: 0,
+      updated_at: new Date().toISOString()
+    };
+
+    if (initQty > 0) {
+      mockTransactions.unshift({
+        id: `tx-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        product_id: newId,
+        location_id: INITIAL_LOCATION.id,
+        transaction_type: 'initial_stock',
+        quantity: initQty,
+        previous_quantity: 0,
+        new_quantity: initQty,
+        unit_cost: item.cost_price,
+        reason: 'Initial stock on bulk product creation',
+        created_at: new Date().toISOString()
+      });
+    }
+
+    createdProducts.push(newProd);
+  }
+
+  notifyListeners();
+  return { count: createdProducts.length, products: createdProducts };
 };
 
 export const updateProduct = async (id: string, updates: Partial<Product>): Promise<Product> => {

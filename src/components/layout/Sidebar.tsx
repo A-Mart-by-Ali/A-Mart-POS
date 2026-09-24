@@ -16,13 +16,15 @@ import {
   ShieldCheck,
   UserCheck,
   TrendingUp,
-  Lock
+  Lock,
+  Tags
 } from 'lucide-react';
 import { AuthUser, isAdmin } from '../../services/authService';
 
 export type ViewType =
   | 'dashboard'
   | 'catalog'
+  | 'categories'
   | 'receiving'
   | 'adjustments'
   | 'ledger'
@@ -58,6 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'pos' as ViewType, label: 'Point of Sale (POS)', icon: ShoppingBag, badge: 'Terminal', adminOnly: false, isKeyLocked: false },
     { id: 'analytics' as ViewType, label: 'Sales & Analytics', icon: TrendingUp, badge: null, adminOnly: false, isKeyLocked: true },
     { id: 'catalog' as ViewType, label: userIsAdmin ? 'Inventory Catalog' : 'Product List', icon: Package, badge: lowStockCount > 0 ? lowStockCount : null, adminOnly: false, isKeyLocked: false },
+    { id: 'categories' as ViewType, label: 'Categories & Variations', icon: Tags, badge: null, adminOnly: true, isKeyLocked: false },
     { id: 'receiving' as ViewType, label: 'Stock Receiving', icon: Truck, badge: null, adminOnly: true, isKeyLocked: false },
     { id: 'adjustments' as ViewType, label: 'Stock Adjustments', icon: SlidersHorizontal, badge: null, adminOnly: true, isKeyLocked: false },
     { id: 'ledger' as ViewType, label: 'Movement Ledger', icon: History, badge: null, adminOnly: true, isKeyLocked: false },

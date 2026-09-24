@@ -62,8 +62,8 @@ export const AnalyticsKeyModal: React.FC<AnalyticsKeyModalProps> = ({
       size="md"
       centeredHeader
       icon={<KeyRound className="w-7 h-7 text-mart-900" />}
-      title="Security Key Required"
-      subtitle="Access to Sales & Financial Analytics is protected. Please enter your authorization key to proceed."
+      title="Enter PIN"
+      subtitle="Enter your PIN to view analytics"
       className={shake ? 'animate-bounce' : ''}
     >
       <div className="space-y-4">
@@ -77,7 +77,7 @@ export const AnalyticsKeyModal: React.FC<AnalyticsKeyModalProps> = ({
         <form onSubmit={handleVerify} className="space-y-5">
           <div>
             <label className="font-bold text-slate-700 block mb-1.5 text-xs text-center uppercase tracking-wider">
-              Authorization Key
+              PIN Code
             </label>
             <div className="relative max-w-xs mx-auto">
               <input

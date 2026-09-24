@@ -762,8 +762,7 @@ export const SalesAnalyticsView: React.FC<SalesAnalyticsViewProps> = ({ onLock }
         onClose={() => setIsAddExpenseOpen(false)}
         size="lg"
         icon={<FileText className="w-5 h-5 text-mart-900" />}
-        title="Record Store Bill / Operational Expense"
-        subtitle="Deducts from store Net Profit in P&L reporting"
+        title="Add Expense"
       >
         <form onSubmit={handleCreateExpense} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -875,8 +874,7 @@ export const SalesAnalyticsView: React.FC<SalesAnalyticsViewProps> = ({ onLock }
         onClose={() => setIsKeyChangeOpen(false)}
         size="sm"
         icon={<KeyRound className="w-5 h-5 text-mart-900" />}
-        title="Update Analytics Key"
-        subtitle="Change manager authorization security PIN"
+        title="Change PIN"
       >
         {keySuccess ? (
           <div className="p-3.5 rounded-2xl bg-orange-50 border border-orange-200 text-orange-900 text-xs font-semibold flex items-center space-x-2">
