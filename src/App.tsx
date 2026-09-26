@@ -14,6 +14,7 @@ import { CategoriesVariationsView } from './views/CategoriesVariationsView';
 import { SalesAnalyticsView } from './views/SalesAnalyticsView';
 import { LoginPage } from './views/LoginPage';
 import { AnalyticsKeyModal } from './components/analytics/AnalyticsKeyModal';
+import { UpdateNotifier } from './components/UpdateNotifier';
 import { getProductsWithStock, subscribeInventoryChanges } from './services/inventoryService';
 import { getCurrentShift, subscribePosChanges } from './services/posService';
 import { getCurrentUser, subscribeAuth, AuthUser, isAdmin } from './services/authService';
@@ -231,6 +232,9 @@ export const App: React.FC = () => {
           setIsAnalyticsKeyModalOpen(false);
         }}
       />
+
+      {/* Update Notification Banner */}
+      <UpdateNotifier />
 
     </div>
   );

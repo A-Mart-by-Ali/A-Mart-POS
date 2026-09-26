@@ -9,11 +9,20 @@ import {
   User,
   Shield,
   ChevronDown,
-  Sparkles
+  Sparkles,
+  RefreshCw,
+  ArrowUpCircle,
+  CheckCircle2
 } from 'lucide-react';
 import { isSupabaseConfigured } from '../../services/supabase';
 import { CashierShift } from '../../types/database';
 import { AuthUser, logout, isAdmin, KNOWN_ACCOUNTS } from '../../services/authService';
+import {
+  subscribeUpdateStatus,
+  checkForUpdates,
+  applyUpdate,
+  SystemStatus
+} from '../../services/updateService';
 
 interface NavbarProps {
   currentShift: CashierShift | null;
@@ -34,6 +43,43 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const userIsAdmin = isAdmin(currentUser);
+
+  const [updateStatus, setUpdateStatus] = useState<SystemStatus>({
+    hasUpdate: false,
+    pendingCommits: 0,
+    message: '',
+    isUpdating: false,
+    offline: !navigator.onLine,
+    version: '1.0.0',
+    mode: 'web',
+    lastChecked: null
+  });
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [justCheckedSuccess, setJustCheckedSuccess] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = subscribeUpdateStatus(setUpdateStatus);
+    return () => unsubscribe();
+  }, []);
+
+  const handleUpdateClick = async () => {
+    if (updateStatus.hasUpdate) {
+      await applyUpdate();
+      return;
+    }
+
+    setIsCheckingUpdate(true);
+    setJustCheckedSuccess(false);
+    try {
+      const res = await checkForUpdates();
+      if (!res.hasUpdate && !res.offline) {
+        setJustCheckedSuccess(true);
+        setTimeout(() => setJustCheckedSuccess(false), 3500);
+      }
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -107,6 +153,43 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <AlertTriangle className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
                 <span>{lowStockCount} Low Stock</span>
+              </button>
+            )}
+
+            {/* Quick In-App 1-Click Update Button */}
+            {updateStatus.hasUpdate ? (
+              <button
+                onClick={handleUpdateClick}
+                disabled={updateStatus.isUpdating}
+                className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-md shadow-orange-950/40 text-xs font-bold transition-all animate-pulse cursor-pointer border border-orange-400/50"
+                title="Click to install update"
+              >
+                {updateStatus.isUpdating ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Installing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Update Ready (Install)</span>
+                  </>
+                )}
+              </button>
+            ) : justCheckedSuccess ? (
+              <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-xs font-semibold animate-fade-in">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Up to Date (v{updateStatus.version})</span>
+              </div>
+            ) : (
+              <button
+                onClick={handleUpdateClick}
+                disabled={isCheckingUpdate}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-mart-800/80 hover:bg-mart-700 border border-mart-700/80 text-mart-200 hover:text-white transition-all text-xs font-medium cursor-pointer shadow-xs"
+                title="Check for software updates"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-mart-300 ${isCheckingUpdate ? 'animate-spin text-orange-400' : ''}`} />
+                <span>{isCheckingUpdate ? 'Checking...' : 'Check Updates'}</span>
               </button>
             )}
 

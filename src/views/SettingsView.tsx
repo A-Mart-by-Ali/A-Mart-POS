@@ -10,7 +10,12 @@ import {
   CheckCircle2,
   Lock,
   LogOut,
-  Sparkles
+  Sparkles,
+  RefreshCw,
+  Wifi,
+  WifiOff,
+  ArrowUpCircle,
+  Cpu
 } from 'lucide-react';
 import { getSettings, updateSettings, BusinessSettings } from '../services/settingsService';
 import {
@@ -19,6 +24,12 @@ import {
   AuthUser,
   KNOWN_ACCOUNTS
 } from '../services/authService';
+import {
+  subscribeUpdateStatus,
+  checkForUpdates,
+  applyUpdate,
+  SystemStatus
+} from '../services/updateService';
 
 export const SettingsView: React.FC = () => {
   const [settings, setSettings] = useState<BusinessSettings>({
@@ -33,9 +44,47 @@ export const SettingsView: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  const [updateStatus, setUpdateStatus] = useState<SystemStatus>({
+    hasUpdate: false,
+    pendingCommits: 0,
+    message: '',
+    isUpdating: false,
+    offline: !navigator.onLine,
+    version: '1.0.0',
+    mode: 'web',
+    lastChecked: null
+  });
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [updateFeedback, setUpdateFeedback] = useState<string | null>(null);
+
   useEffect(() => {
     getSettings().then(setSettings);
+    const unsubscribe = subscribeUpdateStatus(setUpdateStatus);
+    return () => unsubscribe();
   }, []);
+
+  const handleManualCheckUpdate = async () => {
+    setIsCheckingUpdate(true);
+    setUpdateFeedback(null);
+    try {
+      const res = await checkForUpdates();
+      if (res.hasUpdate) {
+        setUpdateFeedback('🚀 New update is ready to install!');
+      } else if (res.offline) {
+        setUpdateFeedback('Network offline: A-Mart is operating safely in standalone offline mode.');
+      } else {
+        setUpdateFeedback('✅ Your POS system is running the latest version.');
+      }
+    } catch (e: any) {
+      setUpdateFeedback('Could not reach update server.');
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
+
+  const handleApplyUpdate = async () => {
+    await applyUpdate();
+  };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,6 +304,91 @@ export const SettingsView: React.FC = () => {
             </p>
           </div>
 
+        </div>
+      </div>
+
+      {/* 4. Instant System Updates & Handover Engine */}
+      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
+          <div className="flex items-center space-x-2">
+            <Cpu className="w-5 h-5 text-mart-800" />
+            <div>
+              <h2 className="font-bold text-base text-slate-900">System Updates & Architecture</h2>
+              <p className="text-xs text-slate-500">Offline-first local POS engine with 1-click cloud sync</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {updateStatus.offline ? (
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                <WifiOff className="w-3.5 h-3.5" />
+                <span>Offline Mode (Cache Active)</span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <Wifi className="w-3.5 h-3.5" />
+                <span>Online & Synchronized</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Installed Version</span>
+            <span className="text-base font-extrabold text-slate-800 mt-1 block">v{updateStatus.version}</span>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Zero-latency desktop & PWA</span>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Runtime Architecture</span>
+            <span className="text-base font-extrabold text-slate-800 mt-1 block">Standalone Engine</span>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Zero external dependencies</span>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Last Update Check</span>
+            <span className="text-base font-extrabold text-slate-800 mt-1 block">
+              {updateStatus.lastChecked ? updateStatus.lastChecked.toLocaleTimeString() : 'Just now'}
+            </span>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Automated background listener</span>
+          </div>
+        </div>
+
+        {updateFeedback && (
+          <div className="p-3 rounded-xl bg-slate-100 border border-slate-200 text-xs font-medium text-slate-800 flex items-center gap-2">
+            <span>{updateFeedback}</span>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+          <p className="text-xs text-slate-500">
+            When developer makes improvements or fixes, tap the button to apply changes without terminal commands.
+          </p>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {updateStatus.hasUpdate && (
+              <button
+                type="button"
+                onClick={handleApplyUpdate}
+                disabled={updateStatus.isUpdating}
+                className="flex-1 sm:flex-initial px-5 py-2.5 rounded-full bg-orange-600 hover:bg-orange-500 text-white font-semibold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                <ArrowUpCircle className="w-4 h-4" />
+                <span>{updateStatus.isUpdating ? 'Installing...' : 'Apply Update Now'}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleManualCheckUpdate}
+              disabled={isCheckingUpdate}
+              className="flex-1 sm:flex-initial px-5 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
+              <span>{isCheckingUpdate ? 'Checking...' : 'Check for Updates'}</span>
+            </button>
+          </div>
         </div>
       </div>
 
