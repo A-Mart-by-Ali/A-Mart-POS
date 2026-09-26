@@ -1,0 +1,11 @@
+
+======================================================
+         A-MART SUPERMARKET & POS - LOCAL BUILD       
+======================================================
+ Status: Running locally (v1.0.0)
+ Address: http://localhost:4173
+ Mode: Standalone Desktop Window
+ Automatic Update API: Active (/api/system/*)
+ Press Ctrl+C in this terminal to stop the application.
+======================================================
+

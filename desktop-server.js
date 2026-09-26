@@ -2,7 +2,7 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -188,19 +188,7 @@ const server = http.createServer(async (req, res) => {
 
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    const url = `http://localhost:${PORT}`;
-    if (!process.env.NO_BROWSER) {
-      const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
-      const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-
-      if (fs.existsSync(edgePath)) {
-        exec(`"${edgePath}" --app="${url}"`);
-      } else if (fs.existsSync(chromePath)) {
-        exec(`"${chromePath}" --app="${url}"`);
-      } else {
-        exec(`start ${url}`);
-      }
-    }
+    console.log(`[Info] Port ${PORT} is already active.`);
     process.exit(0);
   } else {
     console.error('Server error:', err);
@@ -219,18 +207,4 @@ server.listen(PORT, '127.0.0.1', () => {
   console.log(' Automatic Update API: Active (/api/system/*)');
   console.log(' Press Ctrl+C in this terminal to stop the application.');
   console.log('======================================================\n');
-
-  // Check available native browsers to launch in frameless App Window mode
-  if (!process.env.NO_BROWSER) {
-    const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
-    const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-
-    if (fs.existsSync(edgePath)) {
-      exec(`"${edgePath}" --app="${url}"`);
-    } else if (fs.existsSync(chromePath)) {
-      exec(`"${chromePath}" --app="${url}"`);
-    } else {
-      exec(`start ${url}`);
-    }
-  }
 });

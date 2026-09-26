@@ -35,5 +35,6 @@ echo.
 echo [2/2] Launching A-Mart POS Desktop Application...
 echo.
 
+start msedge --app=http://localhost:4173 2>nul || start http://localhost:4173
 node desktop-server.js
 pause
