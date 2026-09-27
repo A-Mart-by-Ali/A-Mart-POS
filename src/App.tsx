@@ -35,6 +35,8 @@ export const App: React.FC = () => {
   const [analyticsUnlocked, setAnalyticsUnlocked] = useState<boolean>(isAnalyticsUnlocked());
   const [isAnalyticsKeyModalOpen, setIsAnalyticsKeyModalOpen] = useState(false);
 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   // Role access guard: If user is staff, only 'catalog', 'pos', and 'analytics' (key-protected) are permitted
   useEffect(() => {
     if (
@@ -88,6 +90,7 @@ export const App: React.FC = () => {
 
   // Handle navigation requests
   const handleNavigate = (view: ViewType) => {
+    setIsMobileMenuOpen(false); // Close mobile menu on navigation
     if (view === 'analytics') {
       if (analyticsUnlocked) {
         setCurrentView('analytics');
@@ -131,18 +134,29 @@ export const App: React.FC = () => {
         }}
         currentUser={currentUser}
         activeView={currentView}
+        onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />
 
       {/* Main Body with Auto-Hiding Sidebar + View Content */}
-      <div className="flex-1 flex max-w-[1600px] w-full mx-auto">
+      <div className="flex-1 flex max-w-[1600px] w-full mx-auto relative overflow-hidden">
         
+        {/* Mobile Sidebar Overlay */}
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-slate-900/50 z-40 md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+
         {/* Navigation Sidebar */}
-        <Sidebar
-          currentView={currentView}
-          onViewChange={handleNavigate}
-          lowStockCount={lowStockCount}
-          currentUser={currentUser}
-        />
+        <div className={`absolute md:static inset-y-0 left-0 z-50 transform md:transform-none transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+          <Sidebar
+            currentView={currentView}
+            onViewChange={handleNavigate}
+            lowStockCount={lowStockCount}
+            currentUser={currentUser}
+          />
+        </div>
 
         {/* View Viewport */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto min-w-0 transition-all">

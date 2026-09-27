@@ -11,8 +11,8 @@ import {
   ChevronDown,
   Sparkles,
   RefreshCw,
-  ArrowUpCircle,
-  CheckCircle2
+  CheckCircle2,
+  Menu
 } from 'lucide-react';
 import { isSupabaseConfigured } from '../../services/supabase';
 import { CashierShift } from '../../types/database';
@@ -31,6 +31,7 @@ interface NavbarProps {
   onNavigateToSettings: () => void;
   currentUser: AuthUser | null;
   activeView: string;
+  onMenuToggle?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -38,7 +39,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   lowStockCount,
   onNavigateToLowStock,
   onNavigateToSettings,
-  currentUser
+  currentUser,
+  onMenuToggle
 }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -103,14 +105,22 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between h-16">
           
             {/* Brand Logo & Name */}
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-inner text-mart-900 font-extrabold text-xl tracking-tighter">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            {onMenuToggle && (
+              <button 
+                onClick={onMenuToggle}
+                className="md:hidden p-1.5 -ml-2 text-mart-200 hover:text-white rounded-lg hover:bg-mart-800 transition-colors"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+            )}
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white flex items-center justify-center shadow-inner text-mart-900 font-extrabold text-lg sm:text-xl tracking-tighter">
               A
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-extrabold text-xl tracking-tight text-white">A-Mart</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider bg-mart-800 text-mart-200 px-2.5 py-0.5 rounded-full border border-mart-700">
+                <span className="font-extrabold text-lg sm:text-xl tracking-tight text-white">A-Mart</span>
+                <span className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-wider bg-mart-800 text-mart-200 px-2 sm:px-2.5 py-0.5 rounded-full border border-mart-700 hidden sm:inline-block">
                   {userIsAdmin ? 'Admin ERP' : 'POS Terminal'}
                 </span>
               </div>

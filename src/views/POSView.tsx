@@ -221,13 +221,13 @@ export const POSView: React.FC = () => {
   });
 
   return (
-    <div className="h-[calc(100vh-6.5rem)] flex flex-col lg:flex-row gap-4 pb-2">
+    <div className="flex flex-col lg:flex-row gap-4 pb-2 h-auto lg:h-[calc(100vh-6.5rem)]">
       
       {/* Left 60%: Barcode Scanner, Categories & Product Grid */}
-      <div className="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm p-4 overflow-hidden">
+      <div className="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm p-4 overflow-hidden min-h-[500px] lg:min-h-0">
         
         {/* Barcode Search Bar */}
-        <form onSubmit={handleBarcodeSubmit} className="flex gap-2">
+        <form onSubmit={handleBarcodeSubmit} className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Barcode className="w-5 h-5 text-mart-700 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -241,7 +241,7 @@ export const POSView: React.FC = () => {
           </div>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-full bg-mart-900 text-white font-semibold text-xs hover:bg-mart-800 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-mart-900 text-white font-semibold text-xs hover:bg-mart-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
           >
             <Plus className="w-4 h-4" />
             <span>Add Item</span>
@@ -297,12 +297,12 @@ export const POSView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-end justify-between">
+                <div className="mt-3 flex flex-col sm:flex-row sm:items-end justify-between gap-1 sm:gap-0">
                   <div className="font-extrabold text-sm text-mart-900 font-mono">
                     Rs. {p.selling_price.toLocaleString()}
                   </div>
                   <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full self-start sm:self-auto ${
                       p.current_stock <= 0
                         ? 'bg-rose-100 text-rose-800'
                         : p.current_stock <= p.min_stock_level
@@ -321,7 +321,7 @@ export const POSView: React.FC = () => {
       </div>
 
       {/* Right 40%: Active Cart & Checkout Terminal */}
-      <div className="w-full lg:w-[420px] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm p-4 overflow-hidden">
+      <div className="w-full lg:w-[420px] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm p-4 overflow-hidden min-h-[500px] lg:min-h-0">
         
         {/* Cart Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
