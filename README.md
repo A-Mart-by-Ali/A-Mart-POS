@@ -1,1 +1,2 @@
-﻿# Inventory-Systems-For-Marts-
+# Inventory-Systems-For-Marts-
+# A-Mart-POS
