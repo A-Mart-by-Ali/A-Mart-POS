@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "chmod +x node_modules/.bin/tsc node_modules/.bin/vite || true; tsc && vite build",
     "preview": "vite preview",
     "desktop": "node desktop-server.js",
     "ship": "npm run build && git add -A && git commit -m \"chore: ship update\" && git push"
